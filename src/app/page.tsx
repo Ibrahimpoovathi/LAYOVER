@@ -64,11 +64,11 @@ const BOARD_ROWS: BoardRow[] = [
   { code: "LY-103", dest: "AI POSTCARDS", info: "THE POSTCARD PRESS", status: "ON TIME" },
   { code: "LY-104", dest: "GATE ANNOUNCEMENTS", info: "TTS TOWER", status: "BOARDING", tone: "green" },
   { code: "LY-105", dest: "DEMO MODE", info: "DEAD-WIFI INSURANCE", status: "STANDBY" },
-  { code: "LY-106", dest: "DUBAI", info: "WINNERS ONLY", status: "FINAL CALL", tone: "red" },
+  { code: "LY-106", dest: "ADVENTURE", info: "EVERY LAYOVER WINS", status: "FINAL CALL", tone: "red" },
 ];
 
 const TICKER =
-  "✦ LAYOVER ✦ BUILT OVERNIGHT AT TINKERSPACE CALICUT ✦ 6PM–6AM ✦ ONE NIGHT · ONE THEME ✦ TURN DEAD HOURS INTO ADVENTURES ✦ ";
+  "✦ LAYOVER ✦ TURN DEAD HOURS INTO ADVENTURES ✦ TIMED · STAMPED · UNFORGETTABLE ✦ EVERY LAYOVER IS A STORY ✦ ";
 
 // world-swap choreography: the wheel/plane runs ~1.1s; data-mode flips the
 // moment the vehicle crosses mid-screen, and colors crossfade underneath.
@@ -681,8 +681,8 @@ export default function Home() {
           <div className="text-center">
             <p className="font-mono text-[10px] tracking-[0.4em] text-muted-foreground">
               {mode === "road"
-                ? "TINKERSPACE CALICUT · 10–11 OCT · 6PM–6AM · MILE ∞ · BAY 7"
-                : "TINKERSPACE CALICUT · 10–11 OCT · 6PM–6AM · GATE ∞ · BAY 7"}
+                ? "LAYOVER · ROADS NEVER SLEEP · MILE ∞ · BAY 7"
+                : "LAYOVER · THE TERMINAL NEVER SLEEPS · GATE ∞ · BAY 7"}
             </p>
             <div className="mt-8 flex justify-center">
               <ModeSwitch mode={mode} onChange={switchMode} />
@@ -1179,7 +1179,7 @@ export default function Home() {
       <footer className="relative mt-auto border-t border-border/60 bg-card/40">
         <div className="safe-bottom mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
-            LAYOVER v3 · WINGS ⇄ WHEELS · BUILT OVERNIGHT · TINKERSPACE CALICUT · {meta.footerLine}
+            LAYOVER v3 · WINGS ⇄ WHEELS · {meta.footerLine}
           </p>
           <div className="flex items-center gap-3">
             <CostGuardChip />

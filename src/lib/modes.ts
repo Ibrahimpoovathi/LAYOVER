@@ -65,7 +65,7 @@ export const MODE_META: Record<TransportMode, ModeMeta> = {
     statusLines: GATE_CONTROL_LINES,
     announceKind: "layover adventure",
     emptyWallLine: "THE WALL IS EMPTY — BE THE FIRST TO FILE A FLIGHT PLAN",
-    footerLine: "WINGS DIVISION · DXB OR BUST",
+    footerLine: "WINGS DIVISION · AIRWAY ∞ · TOWER ON DUTY",
   },
   road: {
     id: "road",

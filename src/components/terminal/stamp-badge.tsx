@@ -77,7 +77,7 @@ export function StampBadge({
           opacity={earned ? 1 : 0.4}
         >
           <textPath href={`#stamp-arc-${uid}`} startOffset="2%">
-            {"LAYOVER · 2026 · CALICUT · "}
+            {"LAYOVER · DEAD HOURS · DEPT · "}
           </textPath>
         </text>
         <text

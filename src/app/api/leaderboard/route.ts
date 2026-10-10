@@ -22,7 +22,7 @@ export const runtime = "nodejs";
  * board answers "who is the crew champion?"; each stop board answers "who
  * owns THIS gate tonight?". Stops themselves are not ranked — people are.
  *
- * Hackathon-scale data: a full read + in-memory rollup is instant and
+ * Demo-scale data: a full read + in-memory rollup is instant and
  * avoids fragile multi-level SQL group-bys.
  */
 

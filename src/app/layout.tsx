@@ -19,8 +19,8 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "LAYOVER — Turn your layover into an adventure",
   description:
-    "Type any airport and your layover length. AI turns dead hours into a mission-based micro-adventure — timed, stamped, unforgettable. Built overnight at LAYOVER 2026, TinkerSpace Calicut.",
-  keywords: ["layover", "travel", "adventure", "AI", "hackathon", "airport"],
+    "Type any airport and your layover length. AI turns dead hours into a mission-based micro-adventure — timed, stamped, unforgettable.",
+  keywords: ["layover", "travel", "adventure", "AI", "airport", "micro-adventure"],
   icons: { icon: "/favicon.svg" },
   openGraph: {
     title: "LAYOVER — Turn your layover into an adventure",

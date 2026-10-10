@@ -202,7 +202,7 @@ export function BusTicketCard({
           <div className="relative mt-4 grid grid-cols-2 gap-2 font-mono sm:grid-cols-3 lg:grid-cols-5">
             <div className="rounded border border-[#17150f]/25 px-2 py-1.5">
               <p className="text-[9px] tracking-[0.2em] text-[#6f6a5c]">DATE</p>
-              <p className="text-[10px] font-bold leading-tight">10-11 OCT · NIGHT</p>
+              <p className="text-[10px] font-bold leading-tight">NIGHT SERVICE · DAILY</p>
             </div>
             <div className="rounded border border-[#17150f]/25 px-2 py-1.5">
               <p className="text-[9px] tracking-[0.2em] text-[#6f6a5c]">VEHICLE</p>
