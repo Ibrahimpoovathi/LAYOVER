@@ -1,0 +1,1363 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sora);
+  --font-mono: var(--font-space-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-paper: var(--paper);
+  --color-paper-foreground: var(--paper-foreground);
+  --color-paper-muted: var(--paper-muted);
+  --color-ink: var(--ink);
+  --color-flap: var(--flap);
+  --color-flap-foreground: var(--flap-foreground);
+  --color-signal: var(--signal);
+  --color-safe: var(--safe);
+  --color-danger: var(--destructive);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================
+   NIGHT TERMINAL — LAYOVER design tokens
+   near-black terminal · departure-board amber · paper passes
+   ============================================ */
+:root {
+  --radius: 0.75rem;
+  color-scheme: dark;
+
+  --background: #0b0b0d;
+  --foreground: #f2eee3;
+
+  --card: #141416;
+  --card-foreground: #f2eee3;
+  --popover: #17171a;
+  --popover-foreground: #f2eee3;
+
+  --primary: #f5a623;
+  --primary-foreground: #1a1206;
+
+  --secondary: #1e1d20;
+  --secondary-foreground: #f2eee3;
+
+  --muted: #1a191c;
+  --muted-foreground: #94907f;
+
+  --accent: #26231d;
+  --accent-foreground: #f5a623;
+
+  --destructive: #e5484d;
+  --border: rgba(242, 238, 227, 0.14);
+  --input: rgba(242, 238, 227, 0.18);
+  --ring: rgba(245, 166, 35, 0.55);
+
+  --paper: #f4efe4;
+  --paper-foreground: #17150f;
+  --paper-muted: #6f6a5c;
+
+  --ink: #17150f;
+  --flap: #17181c;
+  --flap-foreground: #f5a623;
+  --signal: #3fa66a;
+  --safe: #3fa66a;
+
+  --chart-1: #f5a623;
+  --chart-2: #3fa66a;
+  --chart-3: #c2452d;
+  --chart-4: #e8d9b0;
+  --chart-5: #8e8a7e;
+
+  --sidebar: #141416;
+  --sidebar-foreground: #f2eee3;
+  --sidebar-primary: #f5a623;
+  --sidebar-primary-foreground: #1a1206;
+  --sidebar-accent: #26231d;
+  --sidebar-accent-foreground: #f5a623;
+  --sidebar-border: rgba(242, 238, 227, 0.14);
+  --sidebar-ring: rgba(245, 166, 35, 0.55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        rgba(245, 166, 35, 0.07),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 40% at 90% 110%,
+        rgba(63, 166, 106, 0.04),
+        transparent
+      );
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(245, 166, 35, 0.35);
+  }
+}
+
+/* ---------- custom scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0b0d;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2820;
+  border-radius: 8px;
+  border: 2px solid #0b0b0d;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3d3a2e;
+}
+
+/* ============================================
+   BOARDING PASS paper mechanics
+   ============================================ */
+
+/* perforated tear line — vertical, between pass body and stub */
+.perforation-v {
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    var(--background) 5px,
+    transparent 5.5px
+  );
+  background-size: 12px 14px;
+  background-position: center;
+  background-repeat: repeat-y;
+}
+
+/* perforated tear line — horizontal (mobile stub separator) */
+.perforation-h {
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    var(--background) 5px,
+    transparent 5.5px
+  );
+  background-size: 14px 12px;
+  background-repeat: repeat-x;
+  background-position: center;
+}
+
+/* punch notches top & bottom of the perforation */
+.notch {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--background);
+}
+
+/* CSS barcode */
+.barcode {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--ink) 0px,
+    var(--ink) 2px,
+    transparent 2px,
+    transparent 4px,
+    var(--ink) 4px,
+    var(--ink) 5px,
+    transparent 5px,
+    transparent 9px,
+    var(--ink) 9px,
+    var(--ink) 12px,
+    transparent 12px,
+    transparent 14px
+  );
+}
+
+/* fake QR — css grid blocks */
+.qr-blocks {
+  background-image: repeating-conic-gradient(
+    var(--ink) 0% 25%,
+    transparent 0% 50%
+  );
+  background-size: 8px 8px;
+}
+
+/* ============================================
+   SPLIT-FLAP departure board
+   ============================================ */
+.flap-cell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #212329 0%, #17181c 46%, #0f1013 100%);
+  color: var(--flap-foreground);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+    0 2px 3px rgba(0, 0, 0, 0.5);
+  perspective: 300px;
+}
+
+.flap-cell::after {
+  /* hinge line */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+.flap-cell.flipping .flap-face {
+  animation: flap-flip 0.12s ease-in;
+}
+
+.flap-face {
+  will-change: transform;
+}
+
+@keyframes flap-flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  49.9% {
+    transform: rotateX(90deg);
+    filter: brightness(1.6);
+  }
+  50% {
+    transform: rotateX(-90deg);
+    filter: brightness(1.6);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* scanlines overlay for board glow */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.22) 0px,
+    rgba(0, 0, 0, 0.22) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.board-glow {
+  text-shadow:
+    0 0 6px rgba(245, 166, 35, 0.45),
+    0 0 18px rgba(245, 166, 35, 0.18);
+}
+
+/* ============================================
+   STAMP slam
+   ============================================ */
+.stamp-slam {
+  animation: stamp-slam 0.45s cubic-bezier(0.19, 1.3, 0.42, 1) both;
+}
+
+@keyframes stamp-slam {
+  0% {
+    transform: scale(2.6) rotate(calc(var(--stamp-rot, -8deg) - 18deg));
+    opacity: 0;
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) rotate(var(--stamp-rot, -8deg));
+    opacity: 1;
+  }
+}
+
+.ghost-stamp {
+  opacity: 0.16;
+  filter: grayscale(1);
+}
+
+/* ============================================
+   ticket entrance + misc animations
+   ============================================ */
+.pass-enter {
+  animation: pass-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pass-enter {
+  0% {
+    transform: translateY(46px) rotate(-1.6deg) scale(0.97);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.ticker {
+  animation: ticker 26s linear infinite;
+}
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.blink-slow {
+  animation: blink-slow 1.4s steps(2, start) infinite;
+}
+
+@keyframes blink-slow {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* radar sweep for generation state */
+.radar-dot {
+  animation: radar 1.6s ease-in-out infinite;
+}
+
+@keyframes radar {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* safe area for sticky footer on iOS */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================
+   WHEELS DIVISION — highway signage skin
+   Scoped under [data-mode="road"] on the page root.
+   WINGS (default tokens above) is untouched.
+   ============================================ */
+
+/* whole-page theme crossfade when flipping WINGS ⇄ WHEELS */
+.theme-fade {
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+
+[data-mode="road"] {
+  --background: #0c100c; /* bitumen black-green */
+  --card: #101710;
+  --popover: #131b13;
+  --primary: #f5c518; /* hazard yellow */
+  --primary-foreground: #17150f;
+  --accent: #16251a;
+  --accent-foreground: #f5c518;
+  --muted: #141b14;
+  --ring: rgba(245, 197, 24, 0.55);
+  --flap-foreground: #f5c518;
+  --signal: #5fbf85;
+  --safe: #5fbf85;
+}
+
+[data-mode="road"] body,
+[data-mode="road"] {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(95, 191, 133, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(245, 197, 24, 0.05), transparent);
+}
+
+[data-mode="road"] ::selection {
+  background: rgba(245, 197, 24, 0.35);
+}
+
+/* green guide-sign face with the classic white inset border */
+.sign-panel {
+  background: linear-gradient(180deg, #107d42 0%, #0c6d38 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 7px rgba(16, 125, 66, 1),
+    inset 0 0 0 8.5px rgba(255, 255, 255, 0.35),
+    0 24px 60px -28px rgba(0, 0, 0, 0.85);
+}
+
+/* smaller exit-style sign */
+.sign-panel-sm {
+  background: linear-gradient(180deg, #107d42 0%, #0c6d38 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.9),
+    inset 0 0 0 5px rgba(16, 125, 66, 1),
+    inset 0 0 0 6.5px rgba(255, 255, 255, 0.3);
+}
+
+/* hazard warning stripe strip */
+.hazard-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #f5c518 0 12px,
+    #17150f 12px 24px
+  );
+}
+
+/* dashed highway center line divider */
+.road-lane {
+  height: 3px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(242, 238, 227, 0.55) 0 26px,
+    transparent 26px 46px
+  );
+}
+
+/* road-mode glow for headings */
+.board-glow-road {
+  text-shadow:
+    0 0 6px rgba(95, 191, 133, 0.5),
+    0 0 18px rgba(95, 191, 133, 0.2);
+}
+
+/* semantic amber glows — WINGS default; every amber box-shadow in the UI
+   should use these classes so [data-mode="road"] can re-tint them in one place */
+.glow-amber {
+  box-shadow: 0 0 20px -4px rgba(245, 166, 35, 0.7);
+}
+
+.glow-strong {
+  box-shadow: 0 0 30px -8px rgba(245, 166, 35, 0.8);
+}
+
+/* ============================================
+   WHEELS GLOW ENGINE — in road mode, EVERY amber
+   glow in the UI auto-flips to the highway palette:
+   text glows → green sign glow, box glows → hazard
+   yellow + green halo. No component edits needed.
+   ============================================ */
+[data-mode="road"] .board-glow {
+  text-shadow:
+    0 0 6px rgba(95, 191, 133, 0.5),
+    0 0 18px rgba(95, 191, 133, 0.2);
+}
+
+[data-mode="road"] .glow-amber {
+  box-shadow:
+    0 0 20px -4px rgba(245, 197, 24, 0.55),
+    0 0 44px -10px rgba(95, 191, 133, 0.4);
+}
+
+[data-mode="road"] .glow-strong {
+  box-shadow:
+    0 0 30px -8px rgba(245, 197, 24, 0.6),
+    0 0 60px -14px rgba(95, 191, 133, 0.45);
+}
+
+/* conductor punch pop (ticket stage completed) */
+.punch-pop {
+  animation: punch-pop 0.4s cubic-bezier(0.19, 1.3, 0.42, 1) both;
+}
+
+@keyframes punch-pop {
+  0% {
+    transform: scale(1.8) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* bus ticket entrance — torn from the conductor's pad */
+.ticket-enter {
+  animation: ticket-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ticket-enter {
+  0% {
+    transform: translateY(60px) rotate(2.5deg) scale(0.96);
+    opacity: 0;
+  }
+  60% {
+    filter: brightness(1.06);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* boarding pass exit — filed away when the world flips */
+.pass-exit {
+  animation: pass-exit 0.45s ease-in both;
+}
+
+@keyframes pass-exit {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-46px) rotate(-3deg) scale(0.96);
+    opacity: 0;
+  }
+}
+
+/* wheels rescan touch */
+
+/* ============================================
+   v4 — WHEELS AS A SECOND WORLD
+   The hero board is a different MACHINE per world:
+   air  → mechanical split-flap solari (DepartureBoard)
+   road → red LED dot-matrix gantry sign (LedAdvisory)
+   No shared skin — road mode never renders a flap.
+   The world swap is choreographed at the bottom of
+   this file: wheel roll / plane flythrough + a
+   full-page color crossfade.
+   ============================================ */
+
+/* -- hazard edge stripes on the chrome (header/footer) -- */
+[data-mode="road"] header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 4px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #f5c518 0 10px,
+    #17150f 10px 20px
+  );
+}
+
+[data-mode="road"] footer::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #f5c518 0 10px,
+    #17150f 10px 20px
+  );
+}
+
+/* ============================================
+   HIGHWAY LED ADVISORY — red dot-matrix VMS
+   The WHEELS hero board: a black electronics
+   cabinet with an unlit pixel grid, glowing red
+   advisories and marching chevrons. Zero airport.
+   ============================================ */
+
+/* metal cabinet bezel */
+.led-frame {
+  border: 1px solid #0b0c0a;
+  border-radius: 16px;
+  padding: clamp(8px, 1.5vw, 14px);
+  background: linear-gradient(180deg, #3a3c34 0%, #262822 40%, #191b16 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.6),
+    0 24px 60px -24px rgba(0, 0, 0, 0.9);
+}
+
+.led-bolt {
+  position: absolute;
+  z-index: 20;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #6a6d5e, #2c2e26 70%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* the black LED face */
+.led-surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #070807;
+  box-shadow:
+    inset 0 0 24px rgba(0, 0, 0, 0.9),
+    inset 0 0 60px rgba(120, 10, 5, 0.12);
+}
+
+/* unlit LED pixel grid behind every lit dot */
+.led-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  pointer-events: none;
+}
+
+/* glass sheen + edge vignette */
+.led-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(105deg, rgba(255, 255, 255, 0.045) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
+/* the red LED glow itself */
+.led-text {
+  color: #ff3b30;
+  text-shadow:
+    0 0 3px rgba(255, 94, 71, 0.95),
+    0 0 10px rgba(255, 59, 48, 0.65),
+    0 0 28px rgba(255, 40, 20, 0.35);
+}
+
+.led-dim {
+  color: #e0554a;
+  opacity: 0.85;
+  text-shadow: 0 0 6px rgba(255, 59, 48, 0.5);
+}
+
+.led-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #ff3b30;
+  box-shadow:
+    0 0 8px rgba(255, 59, 48, 0.9),
+    0 0 16px rgba(255, 40, 20, 0.5);
+}
+
+.led-blink {
+  animation: led-blink 1.4s steps(1, end) infinite;
+}
+
+@keyframes led-blink {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  71%,
+  100% {
+    opacity: 0.25;
+  }
+}
+
+/* LEDs powering on when a new advisory is posted */
+.led-relight {
+  animation: led-relight 0.42s steps(3, end) both;
+}
+
+@keyframes led-relight {
+  0% {
+    opacity: 0.12;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  45% {
+    opacity: 0.3;
+  }
+  60% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* marching chevrons — the universal "this way" of highways */
+.led-march {
+  animation: led-march 1.05s ease-in-out infinite;
+}
+
+@keyframes led-march {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+/* barely-perceptible LED refresh flicker across the whole panel */
+.led-flicker {
+  animation: led-flicker 5.5s linear infinite;
+}
+
+@keyframes led-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  3% {
+    opacity: 0.96;
+  }
+  4% {
+    opacity: 1;
+  }
+  47% {
+    opacity: 0.98;
+  }
+  48% {
+    opacity: 1;
+  }
+  71% {
+    opacity: 0.95;
+  }
+  72% {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   WORLD-SWAP CHOREOGRAPHY v2
+   to-road → a wheel rolls across the screen,
+             unrolling the WHEELS asphalt behind it.
+   to-air  → a plane sweeps through on a climb,
+             its contrail painting the amber night
+             sky back over the page.
+   data-mode flips mid-flight (page-owned timer)
+   while .mode-morphing crossfades every color.
+   ============================================ */
+
+/* while .mode-morphing is on the page root, EVERY color
+   on the page crossfades between the two worlds */
+.mode-morphing,
+.mode-morphing * {
+  transition-property: background-color, border-color, color, fill, stroke,
+    box-shadow, text-shadow !important;
+  transition-duration: 0.55s !important;
+  transition-timing-function: ease !important;
+}
+
+/* -- the new-world panel that wipes across behind the vehicle -- */
+.world-wipe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: world-wipe 1.05s cubic-bezier(0.72, 0, 0.28, 1) both;
+}
+
+@keyframes world-wipe {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  80% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+/* WHEELS side: rolling asphalt — grit, hazard edges, lane dashes */
+.world-wipe-road {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1.4px),
+    radial-gradient(ellipse 60% 45% at 50% 50%, rgba(95, 191, 133, 0.1), transparent 70%),
+    linear-gradient(180deg, #101510 0%, #0b0f0b 55%, #0d120d 100%);
+  background-size:
+    9px 9px,
+    100% 100%,
+    100% 100%;
+}
+
+.world-wipe-road::before,
+.world-wipe-road::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #f5c518 0 12px,
+    #17150f 12px 24px
+  );
+  opacity: 0.92;
+}
+
+.world-wipe-road::before {
+  top: 0;
+}
+
+.world-wipe-road::after {
+  bottom: 0;
+}
+
+.road-centerline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 3px);
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(245, 197, 24, 0.85) 0 52px,
+    transparent 52px 104px
+  );
+  opacity: 0.8;
+}
+
+/* WINGS side: amber night sky — the jet comes in from the WEST, so the sky
+   is unrolled from the RIGHT edge (transform-origin right) and its leading
+   beam sits on the panel's left edge, where the nose breaks through first */
+.world-wipe-air {
+  transform-origin: right center;
+  background:
+    radial-gradient(ellipse 70% 55% at 30% 40%, rgba(245, 166, 35, 0.14), transparent 70%),
+    linear-gradient(180deg, #191307 0%, #100c05 60%, #0e0a04 100%);
+}
+
+.world-wipe-air::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 214, 140, 0.35) 1px, transparent 1.4px);
+  background-size: 90px 70px;
+  opacity: 0.5;
+}
+
+.world-wipe-air::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 22%;
+  background: linear-gradient(90deg, rgba(245, 166, 35, 0.28), transparent);
+}
+
+/* -- the rolling wheel -- */
+.world-wheel {
+  --wheel: clamp(96px, 14vw, 176px);
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: var(--wheel);
+  height: var(--wheel);
+  margin-top: calc(var(--wheel) / -2);
+  animation: wheel-roll 1.05s cubic-bezier(0.72, 0, 0.28, 1) both;
+}
+
+@keyframes wheel-roll {
+  0% {
+    transform: translateX(calc(-1.2 * var(--wheel)));
+  }
+  100% {
+    transform: translateX(103vw);
+  }
+}
+
+/* spin lives on an inner layer so roll + rotate never fight */
+.wheel-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  animation: wheel-spin 1.05s linear both;
+}
+
+@keyframes wheel-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(1080deg);
+  }
+}
+
+/* tread blocks around the circumference */
+.wheel-tire {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: repeating-conic-gradient(
+    from 3deg,
+    #1d241d 0deg 5deg,
+    #0a0d0a 5deg 11deg
+  );
+  box-shadow:
+    inset 0 0 0 4px rgba(5, 7, 5, 0.9),
+    inset 0 0 18px rgba(0, 0, 0, 0.8),
+    0 14px 34px rgba(0, 0, 0, 0.65);
+}
+
+/* hazard-yellow spokes — the rotation you actually read */
+.wheel-rim {
+  position: absolute;
+  inset: 17%;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle, #f5c518 0 16%, #b9941a 16% 24%, transparent 25%),
+    repeating-conic-gradient(from 0deg, #e8c243 0deg 14deg, #4a3f14 14deg 45deg);
+  box-shadow:
+    inset 0 0 0 3px rgba(10, 10, 6, 0.7),
+    0 0 22px rgba(245, 197, 24, 0.28);
+}
+
+.wheel-hub {
+  position: absolute;
+  inset: 40%;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #ffe27a, #b98f14 75%);
+  box-shadow:
+    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(245, 197, 24, 0.5);
+}
+
+.wheel-shadow {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -16%;
+  height: 18%;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.6), transparent 70%);
+  filter: blur(3px);
+}
+
+/* -- the full-screen jet, flying RIGHT → LEFT --
+   the drawn silhouette is ~1.5× the viewport wide, so the airframe
+   itself fills the screen as it crosses; the amber sky wipe follows
+   in from the right edge behind it */
+.world-plane {
+  --plane: clamp(480px, 150vmax, 2200px);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 2;
+  animation: plane-fly 1.15s cubic-bezier(0.55, 0.06, 0.32, 1) both;
+}
+
+@keyframes plane-fly {
+  0% {
+    transform: translate(calc(50vw + var(--plane) / 2 + 3vw), 60vh);
+    opacity: 0;
+  }
+  7% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-1 * (var(--plane) / 2 + 3vw)), 40vh);
+    opacity: 1;
+  }
+}
+
+/* soft engine glow behind the metal — a plain radial is far cheaper than
+   animating a drop-shadow filter on a glyph this size */
+.plane-glow {
+  position: absolute;
+  width: var(--plane);
+  height: var(--plane);
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.2), transparent 62%);
+}
+
+/* side-view silhouette, nose west, slight nose-up climb attitude */
+.plane-glyph {
+  position: absolute;
+  width: var(--plane);
+  height: var(--plane);
+  transform: translate(-50%, -50%) rotate(-6deg);
+}
+
+/* twin contrails streaming off the engine exhausts — the jet heads west,
+   so the smoke trails EAST (rightward) and fades with distance */
+.plane-contrail {
+  position: absolute;
+  left: calc(var(--plane) * 0.28);
+  top: 17vh;
+  width: 56vw;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(245, 214, 140, 0.75), transparent);
+}
+
+.plane-contrail::after {
+  content: "";
+  position: absolute;
+  top: 4vh;
+  left: -2%;
+  width: 92%;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(245, 214, 140, 0.45), transparent);
+}
+
+/* division tag riding near the bottom of the screen */
+.world-tag {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(64px, 12vh, 130px);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  animation: world-tag 1.2s ease both;
+}
+
+.world-tag-road {
+  color: #7ee2a0;
+  border: 1px solid rgba(95, 191, 133, 0.45);
+  background: rgba(7, 12, 8, 0.88);
+  box-shadow:
+    0 0 24px rgba(95, 191, 133, 0.25),
+    0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.world-tag-air {
+  color: #f5c518;
+  border: 1px solid rgba(245, 197, 24, 0.4);
+  background: rgba(14, 10, 4, 0.88);
+  box-shadow:
+    0 0 24px rgba(245, 166, 35, 0.3),
+    0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes world-tag {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px) scale(0.94);
+  }
+  18%,
+  78% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(1.03);
+  }
+}
+
+/* ============================================
+   DAY ⇄ NIGHT — light theme engine
+   next-themes toggles .light/.dark on <html>.
+   The :root tokens above ARE the night terminal,
+   so dark needs no extra block. Day tokens:
+     html.light                    → WINGS day (sunlit ivory terminal)
+     html.light [data-mode="road"] → WHEELS day (bright concrete highway)
+   Machines stay honest in both themes: the split-flap
+   solari, the red LED cabinet, the green sign faces and
+   the paper tickets keep their physical colors — only
+   the LIGHT AROUND them changes. Specificity ladder:
+   :root (night) < html.light < [data-mode="road"]
+   (night) < html.light [data-mode="road"].
+   ============================================ */
+html.light {
+  color-scheme: light;
+
+  --background: #f5f0e4;
+  --foreground: #221c10;
+
+  --card: #fdfaf0;
+  --card-foreground: #221c10;
+  --popover: #fffdf6;
+  --popover-foreground: #221c10;
+
+  --primary: #a86a08; /* deep amber — readable bronze on ivory */
+  --primary-foreground: #fff8e6;
+
+  --secondary: #ebe4d0;
+  --secondary-foreground: #221c10;
+
+  --muted: #ece6d4;
+  --muted-foreground: #6d6753;
+
+  --accent: #f7ebcd;
+  --accent-foreground: #8a5a06;
+
+  --destructive: #c2393d;
+  --border: rgba(34, 28, 16, 0.16);
+  --input: rgba(34, 28, 16, 0.22);
+  --ring: rgba(168, 106, 8, 0.5);
+
+  --paper: #f9f5ea;
+  --paper-muted: #6f6a5c;
+
+  --signal: #2e7d4f;
+  --safe: #2e7d4f;
+
+  --chart-1: #a86a08;
+  --chart-2: #2e7d4f;
+  --chart-3: #c2452d;
+  --chart-4: #7a6f52;
+  --chart-5: #b3a97f;
+
+  --sidebar: #fdfaf0;
+  --sidebar-foreground: #221c10;
+  --sidebar-primary: #a86a08;
+  --sidebar-primary-foreground: #fff8e6;
+  --sidebar-accent: #f7ebcd;
+  --sidebar-accent-foreground: #8a5a06;
+  --sidebar-border: rgba(34, 28, 16, 0.16);
+  --sidebar-ring: rgba(168, 106, 8, 0.5);
+}
+
+/* sunlit airport — soft amber sky wash instead of night glow */
+html.light body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(240, 159, 12, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(46, 125, 79, 0.08), transparent);
+}
+
+html.light ::selection {
+  background: rgba(240, 159, 12, 0.35);
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #ece7d6;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #c9c0a6;
+  border-color: #ece7d6;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #b0a686;
+}
+
+/* daylight highway — bright concrete, sign green, dark hazard gold */
+html.light [data-mode="road"] {
+  --background: #edebdd;
+  --card: #f8f6ea;
+  --popover: #fbf9ee;
+  --primary: #96740a;
+  --primary-foreground: #fffbe8;
+  --accent: #e7ecd6;
+  --accent-foreground: #0e7a3d;
+  --muted: #e4e2d0;
+  --muted-foreground: #5f6353;
+  --ring: rgba(150, 116, 10, 0.5);
+  --signal: #2e7d4f;
+  --safe: #2e7d4f;
+}
+
+/* highway under the sun — green fields + warm tarmac haze */
+html.light [data-mode="road"] body,
+html.light [data-mode="road"] {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(46, 125, 79, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(150, 116, 10, 0.09), transparent);
+}
+
+html.light [data-mode="road"] ::selection {
+  background: rgba(150, 116, 10, 0.32);
+}
+
+/* neon halos read as dirt on ivory — daylight gets print-style
+   relief shadows instead (specificity beats both dark glow rules) */
+html.light .board-glow,
+html.light .board-glow-road {
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 1px rgba(34, 28, 16, 0.2);
+}
+
+/* EXCEPTION — the solari is a dark machine: its STATUS lamps keep
+   their night glow even in daylight (higher specificity wins) */
+html.light .board-shell .board-glow {
+  text-shadow:
+    0 0 6px rgba(245, 166, 35, 0.45),
+    0 0 18px rgba(245, 166, 35, 0.18);
+}
+html.light [data-mode="road"] .board-shell .board-glow {
+  text-shadow:
+    0 0 6px rgba(95, 191, 133, 0.5),
+    0 0 18px rgba(95, 191, 133, 0.2);
+}
+html.light .glow-amber {
+  box-shadow: 0 2px 14px -4px rgba(168, 106, 8, 0.5);
+}
+html.light .glow-strong {
+  box-shadow: 0 4px 20px -6px rgba(168, 106, 8, 0.55);
+}
+html.light [data-mode="road"] .glow-amber {
+  box-shadow:
+    0 2px 14px -4px rgba(150, 116, 10, 0.45),
+    0 2px 12px -6px rgba(14, 122, 61, 0.4);
+}
+html.light [data-mode="road"] .glow-strong {
+  box-shadow:
+    0 4px 20px -6px rgba(150, 116, 10, 0.5),
+    0 4px 16px -8px rgba(14, 122, 61, 0.45);
+}
+
+/* lane dashes flip to dark paint on bright tarmac */
+html.light .road-lane {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(34, 28, 16, 0.4) 0 26px,
+    transparent 26px 46px
+  );
+}
+
+/* ============================================
+   ON-BOARD TOKEN SCOPE — the split-flap solari is a
+   fixed dark machine (bg #0e0f12) in BOTH themes, so
+   text inside it must keep its night contrast. The
+   daylight ambient palette (dark ink on ivory) would
+   render the REMARKS header + column invisible on the
+   board. Same trick as the sign panel below: custom
+   properties defined ON the machine element win over
+   everything inherited from :root, html.light and
+   [data-mode="road"] ancestors.
+   ============================================ */
+.board-shell {
+  color: var(--foreground);
+  --foreground: #f2eee3;
+  --muted-foreground: #94907f;
+  --primary: #f5a623;
+}
+
+[data-mode="road"] .board-shell {
+  --primary: #f5c518; /* the board stays honest: hazard lamps on the road side */
+}
+
+/* ============================================
+   ON-SIGN TOKEN SCOPE — the green highway panel
+   runs its own contrast system in BOTH themes.
+   Inside a sign, controls (slider labels, presets,
+   vibe chips, comboboxes, dropdowns) must read
+   cream/hazard on sign-green — never the ambient
+   page palette (which is dark-on-dark at night and
+   dark-on-green in daylight → invisible controls).
+   Custom properties resolve from the NEAREST
+   ancestor that defines them, so this block wins
+   over both :root and html.light for everything
+   rendered inside .sign-panel / .sign-panel-sm.
+   ============================================ */
+.sign-panel,
+.sign-panel-sm {
+  /* `color` inherits as a COMPUTED value from body (resolved outside the
+     sign) — re-declare it here so bare/inheritance-fed text and shadcn
+     outline/ghost buttons pick up cream instead of the ambient page ink */
+  color: var(--foreground);
+  --background: #0b5a2f; /* recessed fields (inputs use bg-background/60) */
+  --foreground: #f4efe4;
+  --card: #0d6234;
+  --card-foreground: #f4efe4;
+  --popover: #0e5c30;
+  --popover-foreground: #f4efe4;
+  --muted: rgba(244, 239, 228, 0.14);
+  --muted-foreground: rgba(244, 239, 228, 0.72);
+  --accent: rgba(244, 239, 228, 0.14);
+  --accent-foreground: #f4efe4;
+  --border: rgba(244, 239, 228, 0.3);
+  --input: rgba(244, 239, 228, 0.4);
+  --ring: rgba(245, 197, 24, 0.55);
+  --primary: #f5c518; /* the sign's lamps stay hazard yellow, day or night */
+  --primary-foreground: #17150f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-wipe,
+  .world-wheel,
+  .wheel-spin,
+  .world-plane,
+  .world-tag,
+  .led-blink,
+  .led-march,
+  .led-flicker,
+  .led-relight {
+    animation: none !important;
+  }
+  .world-wipe,
+  .world-wheel,
+  .world-plane,
+  .world-tag {
+    opacity: 0 !important;
+  }
+  .mode-morphing,
+  .mode-morphing * {
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   LOW-STIM TERMINAL — SSR DPNA
+   When the traveler files DPNA (sensory-sensitive),
+   the terminal drops its kinetic layer: nothing blinks,
+   flickers, marches or flips. The machines keep their
+   light — they just stop MOVING. Static glow stays
+   (it's the medium of the LED/solari), motion goes.
+   ============================================ */
+.low-stim .blink-slow,
+.low-stim .led-blink,
+.low-stim .led-march,
+.low-stim .led-flicker,
+.low-stim .led-relight,
+.low-stim .ticker,
+.low-stim .flap-cell.flipping .flap-face,
+.low-stim .punch-pop,
+.low-stim .stamp-slam {
+  animation: none !important;
+}

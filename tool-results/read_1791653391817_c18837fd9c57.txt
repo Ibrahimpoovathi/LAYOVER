@@ -1,0 +1,801 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useCallback, useEffect, useRef, useState } from "react";
+     4→     4→import {
+     5→     5→  Plane,
+     6→     6→  Bus,
+     7→     7→  TrainFront,
+     8→     8→  Megaphone,
+     9→     9→  MailOpen,
+    10→    10→  RotateCcw,
+    11→    11→  ShieldCheck,
+    12→    12→  WifiOff,
+    13→    13→  Loader2,
+    14→    14→  ArrowRight,
+    15→    15→} from "lucide-react";
+    16→    16→import { Switch } from "@/components/ui/switch";
+    17→    17→import { Button } from "@/components/ui/button";
+    18→    18→import { useToast } from "@/hooks/use-toast";
+    19→    19→import { DepartureBoard, SplitFlapText, type BoardRow } from "@/components/terminal/departure-board";
+    20→    20→import { AirportCombobox } from "@/components/terminal/airport-combobox";
+    21→    21→import { ModeSwitch } from "@/components/terminal/mode-switch";
+    22→    22→import { DurationSlider } from "@/components/terminal/duration-slider";
+    23→    23→import { VibePicker } from "@/components/terminal/vibe-picker";
+    24→    24→import { GenerationStatus } from "@/components/terminal/generation-status";
+    25→    25→import { BoardingPassCard } from "@/components/terminal/boarding-pass-card";
+    26→    26→import { BusTicketCard } from "@/components/terminal/bus-ticket-card";
+    27→    27→import { type Airport } from "@/lib/airports";
+    28→    28→import { type Plan, type VibeId, type VehicleId, fmtDuration } from "@/lib/plan-schema";
+    29→    29→import { genericDemoPlan, genericRoadPlan, genericWheelsPlan } from "@/lib/demo-mode";
+    30→    30→import { MODE_META, type TransportMode } from "@/lib/modes";
+    31→    31→
+    32→    32→type Step = "idle" | "generating" | "ready";
+    33→    33→
+    34→    34→const BOARD_ROWS: BoardRow[] = [
+    35→    35→  { code: "LY-101", dest: "AI MISSIONS", info: "GATE CONTROL ENGINE", status: "BOARDING", tone: "green" },
+    36→    36→  { code: "LY-102", dest: "PASSPORT STAMPS", info: "GATE B7 · INK READY", status: "ON TIME" },
+    37→    37→  { code: "LY-103", dest: "AI POSTCARDS", info: "THE POSTCARD PRESS", status: "ON TIME" },
+    38→    38→  { code: "LY-104", dest: "GATE ANNOUNCEMENTS", info: "TTS TOWER", status: "BOARDING", tone: "green" },
+    39→    39→  { code: "LY-105", dest: "DEMO MODE", info: "DEAD-WIFI INSURANCE", status: "STANDBY" },
+    40→    40→  { code: "LY-106", dest: "DUBAI", info: "WINNERS ONLY", status: "FINAL CALL", tone: "red" },
+    41→    41→];
+    42→    42→
+    43→    43→const TICKER =
+    44→    44→  "✦ LAYOVER ✦ BUILT OVERNIGHT AT TINKERSPACE CALICUT ✦ 6PM–6AM ✦ ONE NIGHT · ONE THEME ✦ TURN DEAD HOURS INTO ADVENTURES ✦ ";
+    45→    45→
+    46→    46→const WHEELS_BOARD_ROWS: BoardRow[] = [
+    47→    47→  { code: "WH-201", dest: "VENDE BHARAT", info: "PANTRY CAR ONLINE", status: "ON TIME" },
+    48→    48→  { code: "WH-202", dest: "NH-766 GHAT", info: "9 HAIRPINS · WINDY", status: "DRIVE SLOW", tone: "amber" },
+    49→    49→  { code: "WH-203", dest: "DHABA MILE 42", info: "PAROTTA RADAR", status: "BOARDING", tone: "green" },
+    50→    50→  { code: "WH-204", dest: "TOLL PLAZA 3", info: "EXACT CHANGE ONLY", status: "SLOW", tone: "red" },
+    51→    51→  { code: "WH-205", dest: "DEMO LOCKER", info: "DEAD-WIFI INSURANCE", status: "STANDBY" },
+    52→    52→  { code: "WH-206", dest: "DUBAI", info: "WINNERS ONLY", status: "FINAL CALL", tone: "red" },
+    53→    53→];
+    54→    54→
+    55→    55→const WHEELS_TICKER =
+    56→    56→  "✦ LAYOVER WHEELS ✦ NH-66 COASTAL RUN ✦ VENDE BHARAT ✦ DHABA OPEN ALL NIGHT ✦ HORN OK PLEASE ✦ SAME ENGINE · NEW ROADS ✦ ";
+    57→    57→
+    58→    58→interface WallTrip {
+    59→    59→  id: string;
+    60→    60→  iata: string;
+    61→    61→  city: string;
+    62→    62→  adventureTitle: string;
+    63→    63→  mode?: string;
+    64→    64→  vehicle?: string | null;
+    65→    65→  destination?: string | null;
+    66→    66→  routeCode?: string | null;
+    67→    67→  missionsTotal: number;
+    68→    68→  missionsDone: number;
+    69→    69→  source: string;
+    70→    70→}
+    71→    71→
+    72→    72→export default function Home() {
+    73→    73→  const { toast } = useToast();
+    74→    74→
+    75→    75→  const [step, setStep] = useState<Step>("idle");
+    76→    76→  const [airport, setAirport] = useState<Airport | null>(null);
+    77→    77→  const [origin, setOrigin] = useState<Airport | null>(null);
+    78→    78→  const [destination, setDestination] = useState<Airport | null>(null);
+    79→    79→  const [vehicle, setVehicle] = useState<VehicleId>("bus");
+    80→    80→  const [duration, setDuration] = useState(240);
+    81→    81→  const [vibe, setVibe] = useState<VibeId>("explorer");
+    82→    82→  const [demoMode, setDemoMode] = useState(false);
+    83→    83→  const [mode, setMode] = useState<TransportMode>("air");
+    84→    84→  const [plan, setPlan] = useState<Plan | null>(null);
+    85→    85→  const [source, setSource] = useState<string>("ai");
+    86→    86→  const [done, setDone] = useState<Record<number, boolean>>({});
+    87→    87→  const [nickname, setNickname] = useState("gate-crasher");
+    88→    88→  const [missionIds, setMissionIds] = useState<(string | undefined)[]>([]);
+    89→    89→  const [wall, setWall] = useState<WallTrip[]>([]);
+    90→    90→
+    91→    91→  const [announcing, setAnnouncing] = useState(false);
+    92→    92→  const [postcardLoading, setPostcardLoading] = useState(false);
+    93→    93→  const [postcardUrl, setPostcardUrl] = useState<string | null>(null);
+    94→    94→  const [postcardFallback, setPostcardFallback] = useState(false);
+    95→    95→
+    96→    96→  const audioRef = useRef<HTMLAudioElement | null>(null);
+    97→    97→  const resultRef = useRef<HTMLDivElement | null>(null);
+    98→    98→
+    99→    99→  // mode registry lookups — the pass/ticket always renders in ITS OWN mode,
+   100→   100→  // the switch only decides what gets generated next.
+   101→   101→  const meta = MODE_META[mode];
+   102→   102→  const tickerText = mode === "air" ? TICKER : WHEELS_TICKER;
+   103→   103→  const planMode: TransportMode = (plan?.mode as TransportMode) ?? "air";
+   104→   104→  const passMeta = MODE_META[planMode];
+   105→   105→
+   106→   106→  function switchMode(m: TransportMode) {
+   107→   107→    setMode(m);
+   108→   108→    if (m === "road") {
+   109→   109→      // fresh journey in the wheels world; keep the wings airport for the trip back
+   110→   110→      setOrigin(null);
+   111→   111→      setDestination(null);
+   112→   112→    } else {
+   113→   113→      setAirport((a) => (a && (a.mode ?? "air") === "air" ? a : null));
+   114→   114→    }
+   115→   115→  }
+   116→   116→
+   117→   117→  // one-time traveler identity
+   118→   118→  useEffect(() => {
+   119→   119→    let n = localStorage.getItem("layover-nickname");
+   120→   120→    if (!n) {
+   121→   121→      n = `TRAVELER-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+   122→   122→      localStorage.setItem("layover-nickname", n);
+   123→   123→    }
+   124→   124→    setNickname(n);
+   125→   125→  }, []);
+   126→   126→
+   127→   127→  const loadWall = useCallback(async () => {
+   128→   128→    try {
+   129→   129→      const res = await fetch("/api/trips?limit=10", { cache: "no-store" });
+   130→   130→      const data = await res.json();
+   131→   131→      if (data.ok) setWall(data.trips);
+   132→   132→    } catch {
+   133→   133→      /* wall is decorative — stay silent */
+   134→   134→    }
+   135→   135→  }, []);
+   136→   136→
+   137→   137→  useEffect(() => {
+   138→   138→    loadWall();
+   139→   139→  }, [loadWall]);
+   140→   140→
+   141→   141→  async function generate() {
+   142→   142→    if (mode === "air" && !airport) {
+   143→   143→      toast({
+   144→   144→        title: "No airport selected",
+   145→   145→        description: "Pick a layover airport first — even a pretend one.",
+   146→   146→        variant: "destructive",
+   147→   147→      });
+   148→   148→      return;
+   149→   149→    }
+   150→   150→    if (mode === "road" && (!origin || !destination)) {
+   151→   151→      toast({
+   152→   152→        title: "Journey incomplete",
+   153→   153→        description: "Pick where you board AND where you roll into — the road needs both ends.",
+   154→   154→        variant: "destructive",
+   155→   155→      });
+   156→   156→      return;
+   157→   157→    }
+   158→   158→    if (mode === "road" && origin && destination && origin.iata === destination.iata) {
+   159→   159→      toast({
+   160→   160→        title: "That's a very short journey",
+   161→   161→        description: "Origin and destination can't be the same stop. Even the conductor is confused.",
+   162→   162→        variant: "destructive",
+   163→   163→      });
+   164→   164→      return;
+   165→   165→    }
+   166→   166→
+   167→   167→    const currentMode = mode;
+   168→   168→    setStep("generating");
+   169→   169→    setPostcardUrl(null);
+   170→   170→    setPostcardFallback(false);
+   171→   171→    setDone({});
+   172→   172→
+   173→   173→    try {
+   174→   174→      const body =
+   175→   175→        currentMode === "air"
+   176→   176→          ? {
+   177→   177→              iata: airport!.iata,
+   178→   178→              city: airport!.city,
+   179→   179→              country: airport!.country,
+   180→   180→              durationMin: duration,
+   181→   181→              vibe,
+   182→   182→              mode: currentMode,
+   183→   183→              forceDemo: demoMode,
+   184→   184→            }
+   185→   185→          : {
+   186→   186→              iata: origin!.iata,
+   187→   187→              city: origin!.city,
+   188→   188→              country: origin!.country,
+   189→   189→              destination: { city: destination!.city, code: destination!.iata },
+   190→   190→              vehicle,
+   191→   191→              durationMin: duration,
+   192→   192→              vibe,
+   193→   193→              mode: currentMode,
+   194→   194→              forceDemo: demoMode,
+   195→   195→            };
+   196→   196→
+   197→   197→      const res = await fetch("/api/ai/plan", {
+   198→   198→        method: "POST",
+   199→   199→        headers: { "Content-Type": "application/json" },
+   200→   200→        body: JSON.stringify(body),
+   201→   201→      });
+   202→   202→      const data = await res.json();
+   203→   203→      if (!data.ok || !data.plan) throw new Error(data.error ?? "Gate control went quiet");
+   204→   204→
+   205→   205→      setPlan(data.plan);
+   206→   206→      setSource(data.source ?? "ai");
+   207→   207→      setStep("ready");
+   208→   208→      if (data.source === "demo" && !demoMode) {
+   209→   209→        toast({
+   210→   210→          title: currentMode === "road" ? "Route control unreachable" : "Gate control unreachable",
+   211→   211→          description: "Dispatched a backup adventure from the demo locker instead.",
+   212→   212→        });
+   213→   213→      }
+   214→   214→      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+   215→   215→
+   216→   216→      // archive trip (fire & forget)
+   217→   217→      saveTrip(data.plan, data.source);
+   218→   218→    } catch {
+   219→   219→      // total network failure → local demo plan so the show goes on
+   220→   220→      let local: Plan;
+   221→   221→      if (currentMode === "road" && origin && destination) {
+   222→   222→        local = genericWheelsPlan(
+   223→   223→          origin.iata,
+   224→   224→          origin.city,
+   225→   225→          origin.country,
+   226→   226→          destination.iata,
+   227→   227→          destination.city,
+   228→   228→          vehicle,
+   229→   229→          vibe
+   230→   230→        );
+   231→   231→      } else if (currentMode === "road" && origin) {
+   232→   232→        local = genericRoadPlan(origin.iata, origin.city, origin.country, vibe);
+   233→   233→      } else if (airport) {
+   234→   234→        local = genericDemoPlan(airport.iata, airport.city, airport.country, vibe);
+   235→   235→      } else {
+   236→   236→        return;
+   237→   237→      }
+   238→   238→      setPlan(local);
+   239→   239→      setSource("demo");
+   240→   240→      setStep("ready");
+   241→   241→      toast({
+   242→   242→        title: "Running on internal power",
+   243→   243→        description: "Network is down — the adventure continues regardless.",
+   244→   244→      });
+   245→   245→      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+   246→   246→    }
+   247→   247→  }
+   248→   248→
+   249→   249→  async function saveTrip(p: Plan, src: string) {
+   250→   250→    try {
+   251→   251→      const res = await fetch("/api/trips", {
+   252→   252→        method: "POST",
+   253→   253→        headers: { "Content-Type": "application/json" },
+   254→   254→        body: JSON.stringify({ nickname, plan: p, source: src }),
+   255→   255→      });
+   256→   256→      const data = await res.json();
+   257→   257→      if (data.ok && data.trip?.missions) {
+   258→   258→        setMissionIds(data.trip.missions.map((m: { id: string }) => m.id));
+   259→   259→      }
+   260→   260→      loadWall();
+   261→   261→    } catch {
+   262→   262→      /* archiving is best-effort */
+   263→   263→    }
+   264→   264→  }
+   265→   265→
+   266→   266→  function toggleMission(i: number) {
+   267→   267→    const next = { ...done, [i]: !done[i] };
+   268→   268→    setDone(next);
+   269→   269→    const missionId = missionIds[i];
+   270→   270→    if (missionId) {
+   271→   271→      fetch(`/api/missions/${missionId}`, {
+   272→   272→        method: "PATCH",
+   273→   273→        headers: { "Content-Type": "application/json" },
+   274→   274→        body: JSON.stringify({ done: next[i] }),
+   275→   275→      }).catch(() => {});
+   276→   276→    }
+   277→   277→  }
+   278→   278→
+   279→   279→  async function playAnnouncement() {
+   280→   280→    if (!plan) return;
+   281→   281→    setAnnouncing(true);
+   282→   282→    try {
+   283→   283→      const text =
+   284→   284→        planMode === "road"
+   285→   285→          ? `Attention please. The ${plan.airport.city} to ${plan.destination?.city ?? "parts unknown"} ${plan.vehicle === "train" ? "express" : "service"} is now boarding at platform infinity. ${plan.missions.length} journey stages, ${fmtDuration(plan.totalDurationMin)} on the road. Chai is not optional. Wheels control, out.`
+   286→   286→          : `Attention travellers. The ${plan.airport.city} ${passMeta.announceKind} is now boarding at the gate. ${plan.missions.length} missions, ${fmtDuration(plan.totalDurationMin)} window. Keep your sense of wonder handy. Gate control, out.`;
+   287→   287→      const res = await fetch("/api/ai/announce", {
+   288→   288→        method: "POST",
+   289→   289→        headers: { "Content-Type": "application/json" },
+   290→   290→        body: JSON.stringify({ text }),
+   291→   291→      });
+   292→   292→      if (!res.ok) throw new Error("tower silent");
+   293→   293→      const blob = await res.blob();
+   294→   294→      if (audioRef.current) URL.revokeObjectURL(audioRef.current.src);
+   295→   295→      const url = URL.createObjectURL(blob);
+   296→   296→      audioRef.current = new Audio(url);
+   297→   297→      audioRef.current.play();
+   298→   298→    } catch {
+   299→   299→      toast({
+   300→   300→        title: planMode === "road" ? "The conductor is not answering" : "Tower is not answering",
+   301→   301→        description: "The announcement will have to be imagined.",
+   302→   302→      });
+   303→   303→    } finally {
+   304→   304→      setAnnouncing(false);
+   305→   305→    }
+   306→   306→  }
+   307→   307→
+   308→   308→  async function makePostcard() {
+   309→   309→    if (!plan) return;
+   310→   310→    setPostcardLoading(true);
+   311→   311→    setPostcardFallback(false);
+   312→   312→    try {
+   313→   313→      const res = await fetch("/api/ai/postcard", {
+   314→   314→        method: "POST",
+   315→   315→        headers: { "Content-Type": "application/json" },
+   316→   316→        body: JSON.stringify({
+   317→   317→          ...plan.airport,
+   318→   318→          vibe: plan.vibe,
+   319→   319→          mode: planMode,
+   320→   320→          vehicle: plan.vehicle,
+   321→   321→        }),
+   322→   322→      });
+   323→   323→      const data = await res.json();
+   324→   324→      if (data.ok && data.imageDataUrl) {
+   325→   325→        setPostcardUrl(data.imageDataUrl);
+   326→   326→      } else {
+   327→   327→        setPostcardFallback(true);
+   328→   328→      }
+   329→   329→    } catch {
+   330→   330→      setPostcardFallback(true);
+   331→   331→    } finally {
+   332→   332→      setPostcardLoading(false);
+   333→   333→    }
+   334→   334→  }
+   335→   335→
+   336→   336→  function reset() {
+   337→   337→    setStep("idle");
+   338→   338→    setPlan(null);
+   339→   339→    setDone({});
+   340→   340→    setMissionIds([]);
+   341→   341→    setPostcardUrl(null);
+   342→   342→    setPostcardFallback(false);
+   343→   343→  }
+   344→   344→
+   345→   345→  const VehicleIcon = vehicle === "train" ? TrainFront : Bus;
+   346→   346→
+   347→   347→  return (
+   348→   348→    <div className="theme-fade flex min-h-screen flex-col" data-mode={mode}>
+   349→   349→      {/* ── HEADER ── */}
+   350→   350→      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur">
+   351→   351→        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+   352→   352→          <a href="#top" className="flex items-center gap-2.5">
+   353→   353→            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_0_20px_-4px_rgba(245,166,35,0.7)]">
+   354→   354→              {mode === "road" ? (
+   355→   355→                <Bus className="size-5" aria-hidden="true" />
+   356→   356→              ) : (
+   357→   357→                <Plane className="size-5 rotate-45" aria-hidden="true" />
+   358→   358→              )}
+   359→   359→            </span>
+   360→   360→            <span>
+   361→   361→              <span className="block font-mono text-sm font-bold tracking-[0.3em] text-primary board-glow">
+   362→   362→                LAYOVER
+   363→   363→              </span>
+   364→   364→              <span className="block font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
+   365→   365→                DEAD HOURS → ADVENTURES
+   366→   366→              </span>
+   367→   367→            </span>
+   368→   368→          </a>
+   369→   369→          <div className="flex items-center gap-2.5">
+   370→   370→            <WifiOff
+   371→   371→              className={`size-4 ${demoMode ? "text-primary" : "text-muted-foreground/40"}`}
+   372→   372→              aria-hidden="true"
+   373→   373→            />
+   374→   374→            <label className="hidden sm:flex cursor-pointer items-center gap-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
+   375→   375→              DEMO MODE
+   376→   376→              <Switch checked={demoMode} onCheckedChange={setDemoMode} aria-label="Toggle demo mode" />
+   377→   377→            </label>
+   378→   378→            <Button
+   379→   379→              size="sm"
+   380→   380→              onClick={() => document.getElementById("plan")?.scrollIntoView({ behavior: "smooth" })}
+   381→   381→              className="font-mono text-xs tracking-widest"
+   382→   382→            >
+   383→   383→              PLAN MINE
+   384→   384→            </Button>
+   385→   385→          </div>
+   386→   386→        </div>
+   387→   387→      </header>
+   388→   388→
+   389→   389→      <main id="top" className="flex-1">
+   390→   390→        {/* ── HERO ── */}
+   391→   391→        <section className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16">
+   392→   392→          <div className="text-center">
+   393→   393→            <p className="font-mono text-[10px] tracking-[0.4em] text-muted-foreground">
+   394→   394→              TINKERSPACE CALICUT · 10–11 OCT · 6PM–6AM · GATE ∞ · BAY 7
+   395→   395→            </p>
+   396→   396→            <div className="mt-8 flex justify-center">
+   397→   397→              <ModeSwitch mode={mode} onChange={switchMode} />
+   398→   398→            </div>
+   399→   399→            <p className="mt-3 font-mono text-[10px] tracking-[0.3em] text-muted-foreground">
+   400→   400→              {meta.subline}
+   401→   401→            </p>
+   402→   402→            <div className="mt-6 flex justify-center overflow-hidden">
+   403→   403→              <SplitFlapText
+   404→   404→                key={mode}
+   405→   405→                text={meta.heroText}
+   406→   406→                staggerMs={40}
+   407→   407→                cellClassName="w-[0.82em] h-[1.35em] text-[8.5vw] sm:text-6xl lg:text-7xl font-mono font-bold"
+   408→   408→                className="gap-[4px]"
+   409→   409→              />
+   410→   410→            </div>
+   411→   411→            <p className="mx-auto mt-6 max-w-xl text-balance text-muted-foreground">
+   412→   412→              {mode === "air"
+   413→   413→                ? "Type your airport. Set your layover. Gate Control AI turns dead hours into a "
+   414→   414→                : "Pick your route. Bus or train. Route Control AI turns the whole ride into a "}
+   415→   415→              <span className="text-primary font-semibold">mission-based micro-adventure</span> — timed,
+   416→   416→              stamped, and kept forever.
+   417→   417→            </p>
+   418→   418→          </div>
+   419→   419→
+   420→   420→          <div className={`mt-10 ${mode === "road" ? "rounded-xl p-3 sm:p-4 sign-panel" : ""}`}>
+   421→   421→            {mode === "road" && (
+   422→   422→              <div className="mb-3 flex items-center justify-between px-1 font-mono text-[10px] font-bold tracking-[0.3em] text-[#f4efe4]">
+   423→   423→                <span>HIGHWAY ADVISORY</span>
+   424→   424→                <span className="opacity-80">EXIT ∞ ❯❯</span>
+   425→   425→              </div>
+   426→   426→            )}
+   427→   427→            <DepartureBoard
+   428→   428→              key={mode}
+   429→   429→              rows={mode === "air" ? BOARD_ROWS : WHEELS_BOARD_ROWS}
+   430→   430→              firstColLabel={meta.firstColLabel}
+   431→   431→            />
+   432→   432→          </div>
+   433→   433→
+   434→   434→          {/* ticker */}
+   435→   435→          <div
+   436→   436→            key={mode}
+   437→   437→            className="mt-6 overflow-hidden rounded-md border border-border/60 bg-card/50 py-2"
+   438→   438→            aria-hidden="true"
+   439→   439→          >
+   440→   440→            <div className="ticker flex w-max whitespace-nowrap font-mono text-[10px] tracking-[0.25em] text-muted-foreground">
+   441→   441→              <span className="px-2">{tickerText.repeat(3)}</span>
+   442→   442→              <span className="px-2">{tickerText.repeat(3)}</span>
+   443→   443→            </div>
+   444→   444→          </div>
+   445→   445→        </section>
+   446→   446→
+   447→   447→        {/* ── PLANNER ── */}
+   448→   448→        <section
+   449→   449→          id="plan"
+   450→   450→          className={`mx-auto mt-16 scroll-mt-20 px-4 sm:px-6 ${
+   451→   451→            step === "ready" && planMode === "road" ? "max-w-5xl" : "max-w-3xl"
+   452→   452→          }`}
+   453→   453→        >
+   454→   454→          <div
+   455→   455→            className={`rounded-xl border p-5 shadow-xl backdrop-blur sm:p-8 ${
+   456→   456→              mode === "road" ? "sign-panel border-0 bg-transparent" : "border-border bg-card/60"
+   457→   457→            }`}
+   458→   458→          >
+   459→   459→            <div className="mb-6 flex items-center justify-between">
+   460→   460→              <h2
+   461→   461→                className={`font-mono text-xs tracking-[0.35em] ${
+   462→   462→                  mode === "road" ? "text-[#f4efe4] board-glow-road" : "text-primary board-glow"
+   463→   463→                }`}
+   464→   464→              >
+   465→   465→                {meta.plannerHeading}
+   466→   466→              </h2>
+   467→   467→              <span
+   468→   468→                className={`font-mono text-[9px] tracking-widest ${
+   469→   469→                  mode === "road" ? "text-[#f4efe4]/70" : "text-muted-foreground"
+   470→   470→                }`}
+   471→   471→              >
+   472→   472→                {demoMode ? "DEMO LOCK ENGAGED" : meta.controlLabel}
+   473→   473→              </span>
+   474→   474→            </div>
+   475→   475→
+   476→   476→            {step === "generating" ? (
+   477→   477→              <GenerationStatus
+   478→   478→                airportLabel={
+   479→   479→                  mode === "road"
+   480→   480→                    ? `${origin ? `${origin.iata} · ${origin.city}` : "…"} → ${destination?.city ?? "…"}`
+   481→   481→                    : airport
+   482→   482→                      ? `${airport.iata} · ${airport.city}`
+   483→   483→                      : "…"
+   484→   484→                }
+   485→   485→                lines={meta.statusLines}
+   486→   486→              />
+   487→   487→            ) : step === "ready" && plan ? (
+   488→   488→              <div className="space-y-6">
+   489→   489→                {/* quick summary + actions */}
+   490→   490→                <div className="flex flex-wrap items-center justify-between gap-3">
+   491→   491→                  <p
+   492→   492→                    className={`font-mono text-xs tracking-widest ${
+   493→   493→                      mode === "road" ? "text-[#f4efe4]/70" : "text-muted-foreground"
+   494→   494→                    }`}
+   495→   495→                  >
+   496→   496→                    {planMode === "road" ? "TICKET ISSUED FOR" : "PASS ISSUED FOR"}{" "}
+   497→   497→                    <span
+   498→   498→                      className={`font-bold ${mode === "road" ? "text-[#f4efe4]" : "text-primary"}`}
+   499→   499→                    >
+   500→   500→                      {planMode === "road"
+   501→   501→                        ? `${plan.airport.city.toUpperCase()} → ${(plan.destination?.city ?? "& BACK").toUpperCase()}`
+   502→   502→                        : plan.airport.iata}
+   503→   503→                    </span>{" "}
+   504→   504→                    · {plan.missions.length} {planMode === "road" ? "STAGES" : "MISSIONS"} ·{" "}
+   505→   505→                    {fmtDuration(plan.totalDurationMin)}
+   506→   506→                  </p>
+   507→   507→                  <div className="flex flex-wrap gap-2">
+   508→   508→                    <Button
+   509→   509→                      size="sm"
+   510→   510→                      variant="outline"
+   511→   511→                      onClick={playAnnouncement}
+   512→   512→                      disabled={announcing}
+   513→   513→                      className="font-mono text-xs tracking-widest"
+   514→   514→                    >
+   515→   515→                      {announcing ? <Loader2 className="size-4 animate-spin" /> : <Megaphone className="size-4" />}
+   516→   516→                      ANNOUNCE
+   517→   517→                    </Button>
+   518→   518→                    <Button
+   519→   519→                      size="sm"
+   520→   520→                      variant="outline"
+   521→   521→                      onClick={makePostcard}
+   522→   522→                      disabled={postcardLoading}
+   523→   523→                      className="font-mono text-xs tracking-widest"
+   524→   524→                    >
+   525→   525→                      {postcardLoading ? <Loader2 className="size-4 animate-spin" /> : <MailOpen className="size-4" />}
+   526→   526→                      POSTCARD
+   527→   527→                    </Button>
+   528→   528→                    <Button
+   529→   529→                      size="sm"
+   530→   530→                      variant="ghost"
+   531→   531→                      onClick={reset}
+   532→   532→                      className="font-mono text-xs tracking-widest"
+   533→   533→                    >
+   534→   534→                      <RotateCcw className="size-4" />
+   535→   535→                      NEW
+   536→   536→                    </Button>
+   537→   537→                  </div>
+   538→   538→                </div>
+   539→   539→
+   540→   540→                {planMode === "road" ? (
+   541→   541→                  <BusTicketCard plan={plan} done={done} onToggleMission={toggleMission} source={source} />
+   542→   542→                ) : (
+   543→   543→                  <BoardingPassCard
+   544→   544→                    plan={plan}
+   545→   545→                    done={done}
+   546→   546→                    onToggleMission={toggleMission}
+   547→   547→                    source={source}
+   548→   548→                    passTitle={passMeta.passTitle}
+   549→   549→                    passSubtitle={passMeta.passSubtitle}
+   550→   550→                    routeFrom={passMeta.routeFrom}
+   551→   551→                  />
+   552→   552→                )}
+   553→   553→
+   554→   554→                {/* postcard area */}
+   555→   555→                {(postcardUrl || postcardFallback || postcardLoading) && (
+   556→   556→                  <div className="pass-enter mx-auto max-w-md">
+   557→   557→                    <div className="rotate-[-1.2deg] rounded-lg bg-paper p-3 pb-5 shadow-2xl">
+   558→   558→                      <div className="relative flex aspect-[1344/768] items-center justify-center overflow-hidden rounded-md bg-[#e8e0cd]">
+   559→   559→                        {postcardUrl ? (
+   560→   560→                          <img
+   561→   561→                            src={postcardUrl}
+   562→   562→                            alt={`AI-generated postcard of ${plan.airport.city}`}
+   563→   563→                            className="size-full object-cover"
+   564→   564→                          />
+   565→   565→                        ) : (
+   566→   566→                          <div className="p-6 text-center">
+   567→   567→                            <p className="font-mono text-[11px] font-bold tracking-[0.2em] text-[#6f6a5c]">
+   568→   568→                              {postcardLoading ? "THE PRESS IS INKING…" : "PRESS JAMMED — POSTCARD PENDING"}
+   569→   569→                            </p>
+   570→   570→                            <p className="mt-2 text-xs italic text-[#6f6a5c]/80">
+   571→   571→                              {postcardLoading
+   572→   572→                                ? planMode === "road"
+   573→   573→                                  ? "ghat roads, chai steam, one faithful bus"
+   574→   574→                                  : "vintage ink, amber skies, one tiny airplane"
+   575→   575→                                : "imagine something beautiful with us"}
+   576→   576→                            </p>
+   577→   577→                          </div>
+   578→   578→                        )}
+   579→   579→                      </div>
+   580→   580→                      <p className="mt-3 text-center font-mono text-[10px] tracking-[0.25em] text-[#6f6a5c]">
+   581→   581→                        {planMode === "road"
+   582→   582→                          ? `GREETINGS FROM THE ${plan.routeCode ?? "OPEN ROAD"} — WISH YOU WERE ON BOARD`
+   583→   583→                          : `GREETINGS FROM ${plan.airport.city.toUpperCase()} — WISH YOU WERE HERE`}
+   584→   584→                      </p>
+   585→   585→                    </div>
+   586→   586→                  </div>
+   587→   587→                )}
+   588→   588→              </div>
+   589→   589→            ) : (
+   590→   590→              <div className="space-y-7">
+   591→   591→                {mode === "air" ? (
+   592→   592→                  <div>
+   593→   593→                    <span className="mb-2 block font-mono text-[10px] tracking-[0.25em] text-muted-foreground">
+   594→   594→                      {meta.stopLabel}
+   595→   595→                    </span>
+   596→   596→                    <AirportCombobox
+   597→   597→                      id="airport-input"
+   598→   598→                      value={airport}
+   599→   599→                      onSelect={setAirport}
+   600→   600→                      mode="air"
+   601→   601→                      icon="plane"
+   602→   602→                      placeholder={meta.stopPlaceholder}
+   603→   603→                    />
+   604→   604→                    <p className="mt-2 font-mono text-[10px] text-muted-foreground/70">{meta.tryHint}</p>
+   605→   605→                  </div>
+   606→   606→                ) : (
+   607→   607→                  <>
+   608→   608→                    {/* vehicle toggle — bus or train */}
+   609→   609→                    <div>
+   610→   610→                      <span className="mb-2 block font-mono text-[10px] tracking-[0.25em] text-[#f4efe4]/80">
+   611→   611→                        PICK YOUR WHEELS
+   612→   612→                      </span>
+   613→   613→                      <div
+   614→   614→                        role="radiogroup"
+   615→   615→                        aria-label="Vehicle type"
+   616→   616→                        className="grid grid-cols-2 gap-2"
+   617→   617→                      >
+   618→   618→                        {(
+   619→   619→                          [
+   620→   620→                            { id: "bus", label: "BUS · ROADS", Icon: Bus },
+   621→   621→                            { id: "train", label: "TRAIN · RAILS", Icon: TrainFront },
+   622→   622→                          ] as const
+   623→   623→                        ).map(({ id, label, Icon }) => {
+   624→   624→                          const selected = vehicle === id;
+   625→   625→                          return (
+   626→   626→                            <button
+   627→   627→                              key={id}
+   628→   628→                              type="button"
+   629→   629→                              role="radio"
+   630→   630→                              aria-checked={selected}
+   631→   631→                              onClick={() => setVehicle(id)}
+   632→   632→                              className={`flex min-h-11 items-center justify-center gap-2 rounded-md border px-3 font-mono text-xs font-bold tracking-widest transition-all ${
+   633→   633→                                selected
+   634→   634→                                  ? "bg-[#f4efe4] text-[#0c6d38] border-[#f4efe4]"
+   635→   635→                                  : "border-[#f4efe4]/40 text-[#f4efe4]/85 hover:bg-[#f4efe4]/10"
+   636→   636→                              }`}
+   637→   637→                            >
+   638→   638→                              <Icon className="size-4" aria-hidden="true" />
+   639→   639→                              {label}
+   640→   640→                            </button>
+   641→   641→                          );
+   642→   642→                        })}
+   643→   643→                      </div>
+   644→   644→                    </div>
+   645→   645→
+   646→   646→                    {/* FROM / TO journey inputs */}
+   647→   647→                    <div className="grid items-start gap-3 sm:grid-cols-[1fr_auto_1fr]">
+   648→   648→                      <div>
+   649→   649→                        <span className="mb-2 block font-mono text-[10px] tracking-[0.25em] text-[#f4efe4]/80">
+   650→   650→                          FROM · BOARDING
+   651→   651→                        </span>
+   652→   652→                        <AirportCombobox
+   653→   653→                          id="origin-input"
+   654→   654→                          value={origin}
+   655→   655→                          onSelect={setOrigin}
+   656→   656→                          mode="road"
+   657→   657→                          icon={vehicle}
+   658→   658→                          vehicle={vehicle}
+   659→   659→                          placeholder="Bus stand, station, halt…"
+   660→   660→                        />
+   661→   661→                      </div>
+   662→   662→                      <div className="flex h-14 items-center justify-center sm:pt-6">
+   663→   663→                        <ArrowRight className="size-5 rotate-90 text-[#f4efe4] sm:rotate-0" aria-hidden="true" />
+   664→   664→                      </div>
+   665→   665→                      <div>
+   666→   666→                        <span className="mb-2 block font-mono text-[10px] tracking-[0.25em] text-[#f4efe4]/80">
+   667→   667→                          TO · ARRIVAL
+   668→   668→                        </span>
+   669→   669→                        <AirportCombobox
+   670→   670→                          id="destination-input"
+   671→   671→                          value={destination}
+   672→   672→                          onSelect={setDestination}
+   673→   673→                          mode="road"
+   674→   674→                          icon={vehicle}
+   675→   675→                          vehicle={vehicle}
+   676→   676→                          excludeIata={origin?.iata}
+   677→   677→                          placeholder="Where the road ends…"
+   678→   678→                        />
+   679→   679→                      </div>
+   680→   680→                    </div>
+   681→   681→                    <p className="-mt-4 font-mono text-[10px] text-[#f4efe4]/60">{meta.tryHint}</p>
+   682→   682→                  </>
+   683→   683→                )}
+   684→   684→
+   685→   685→                <DurationSlider value={duration} onChange={setDuration} label={meta.durationLabel} />
+   686→   686→                <VibePicker value={vibe} onChange={setVibe} />
+   687→   687→
+   688→   688→                <Button
+   689→   689→                  size="lg"
+   690→   690→                  onClick={generate}
+   691→   691→                  className="w-full min-h-14 font-mono text-sm font-bold tracking-[0.25em] shadow-[0_0_30px_-8px_rgba(245,166,35,0.8)]"
+   692→   692→                >
+   693→   693→                  {mode === "road" ? <VehicleIcon className="size-5" /> : <ShieldCheck className="size-5" />}
+   694→   694→                  {meta.buttonLabel}
+   695→   695→                </Button>
+   696→   696→                <p
+   697→   697→                  className={`text-center font-mono text-[10px] tracking-[0.2em] ${
+   698→   698→                    mode === "road" ? "text-[#f4efe4]/60" : "text-muted-foreground/70"
+   699→   699→                  }`}
+   700→   700→                >
+   701→   701→                  {mode === "air"
+   702→   702→                    ? "GATE CONTROL RESPONDS IN ~10–20 SECONDS · DEMO MODE = INSTANT"
+   703→   703→                    : "ROUTE CONTROL RESPONDS IN ~10–20 SECONDS · DEMO MODE = INSTANT"}
+   704→   704→                </p>
+   705→   705→              </div>
+   706→   706→            )}
+   707→   707→          </div>
+   708→   708→        </section>
+   709→   709→
+   710→   710→        {/* ── WALL OF ADVENTURES ── */}
+   711→   711→        <section className="mx-auto mt-16 max-w-6xl px-4 pb-20 sm:px-6">
+   712→   712→          <div className="mb-5 flex items-end justify-between">
+   713→   713→            <div>
+   714→   714→              <h2 className="font-mono text-xs tracking-[0.35em] text-primary board-glow">
+   715→   715→                WALL OF ADVENTURES
+   716→   716→              </h2>
+   717→   717→              <p className="mt-1 text-sm text-muted-foreground">
+   718→   718→                Every journey filed tonight, archived forever.
+   719→   719→              </p>
+   720→   720→            </div>
+   721→   721→            <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
+   722→   722→              {wall.length} LOGGED
+   723→   723→            </span>
+   724→   724→          </div>
+   725→   725→
+   726→   726→          {wall.length === 0 ? (
+   727→   727→            <div className="rounded-xl border border-dashed border-border p-10 text-center">
+   728→   728→              <p className="font-mono text-xs tracking-[0.25em] text-muted-foreground">{meta.emptyWallLine}</p>
+   729→   729→            </div>
+   730→   730→          ) : (
+   731→   731→            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Recent adventures">
+   732→   732→              {wall.map((t) => (
+   733→   733→                <li
+   734→   734→                  key={t.id}
+   735→   735→                  className="group rounded-lg border border-border bg-card/60 p-4 transition-all hover:border-primary/40 hover:bg-card"
+   736→   736→                >
+   737→   737→                  <div className="flex items-center justify-between">
+   738→   738→                    <span className="flex items-center gap-1.5 font-mono text-sm font-bold text-primary">
+   739→   739→                      {t.mode === "road" ? (
+   740→   740→                        t.vehicle === "train" ? (
+   741→   741→                          <TrainFront className="size-3.5" aria-hidden="true" />
+   742→   742→                        ) : (
+   743→   743→                          <Bus className="size-3.5" aria-hidden="true" />
+   744→   744→                        )
+   745→   745→                      ) : (
+   746→   746→                        <Plane className="size-3.5" aria-hidden="true" />
+   747→   747→                      )}
+   748→   748→                      {t.iata}
+   749→   749→                      <span className="font-mono text-[9px] font-normal tracking-widest text-muted-foreground">
+   750→   750→                        {t.mode === "road" ? (t.vehicle === "train" ? "WHEELS·TRAIN" : "WHEELS·BUS") : "WINGS"}
+   751→   751→                      </span>
+   752→   752→                    </span>
+   753→   753→                    <span className="font-mono text-[9px] tracking-widest text-muted-foreground">
+   754→   754→                      {t.source === "demo" ? "TRAINING" : "LIVE"}
+   755→   755→                    </span>
+   756→   756→                  </div>
+   757→   757→                  <p className="mt-1.5 text-sm font-semibold leading-snug">{t.adventureTitle}</p>
+   758→   758→                  <p className="mt-1 text-xs text-muted-foreground">
+   759→   759→                    {t.mode === "road" && t.destination ? `${t.city} → ${t.destination}` : t.city}
+   760→   760→                  </p>
+   761→   761→                  <div className="mt-3 flex items-center justify-between font-mono text-[10px] tracking-widest text-muted-foreground">
+   762→   762→                    <span>
+   763→   763→                      {t.missionsDone}/{t.missionsTotal} {t.mode === "road" ? "STAGES" : "MISSIONS"}
+   764→   764→                    </span>
+   765→   765→                    <span className="flex gap-1">
+   766→   766→                      {Array.from({ length: t.missionsTotal }).map((_, i) => (
+   767→   767→                        <span
+   768→   768→                          key={i}
+   769→   769→                          className={`size-2 rounded-full ${i < t.missionsDone ? "bg-primary" : "bg-border"}`}
+   770→   770→                        />
+   771→   771→                      ))}
+   772→   772→                    </span>
+   773→   773→                  </div>
+   774→   774→                </li>
+   775→   775→              ))}
+   776→   776→            </ul>
+   777→   777→          )}
+   778→   778→        </section>
+   779→   779→      </main>
+   780→   780→
+   781→   781→      {/* ── STICKY FOOTER ── */}
+   782→   782→      <footer className="mt-auto border-t border-border/60 bg-card/40">
+   783→   783→        <div className="safe-bottom mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+   784→   784→          <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
+   785→   785→            LAYOVER v3 · WINGS ⇄ WHEELS · BUILT OVERNIGHT · TINKERSPACE CALICUT · {meta.footerLine}
+   786→   786→          </p>
+   787→   787→          <div className="flex items-center gap-3">
+   788→   788→            <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
+   789→   789→              TRAVELER {nickname}
+   790→   790→            </span>
+   791→   791→            <label className="flex cursor-pointer items-center gap-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground sm:hidden">
+   792→   792→              DEMO
+   793→   793→              <Switch checked={demoMode} onCheckedChange={setDemoMode} aria-label="Toggle demo mode" />
+   794→   794→            </label>
+   795→   795→          </div>
+   796→   796→        </div>
+   797→   797→      </footer>
+   798→   798→    </div>
+   799→   799→  );
+   800→   800→}
+   801→   801→

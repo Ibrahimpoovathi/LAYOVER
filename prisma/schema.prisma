@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// LAYOVER — data model
+// Traveler → Trips → Missions (→ Stamps)
+// Every adventure generated tonight lands here.
+// The "wall of adventures" at the booth reads from this.
+// ─────────────────────────────────────────────
+
+model Traveler {
+  id        String   @id @default(cuid())
+  nickname  String   @unique
+  trips     Trip[]
+  createdAt DateTime @default(now())
+}
+
+model Trip {
+  id              String    @id @default(cuid())
+  travelerId      String?
+  traveler        Traveler? @relation(fields: [travelerId], references: [id], onDelete: SetNull)
+  iata            String
+  city            String
+  country         String
+  mode            String    @default("air") // "air" (WINGS) | "road" (WHEELS)
+  vehicle         String?   // WHEELS only: "bus" | "train"
+  destination     String?   // WHEELS journey: "Bengaluru" (city of arrival)
+  routeCode       String?   // "NH-766" / "COASTAL LINE" ticket flavor
+  durationMin     Int
+  vibe            String
+  adventureTitle  String
+  funFact         String?
+  bufferMin       Int       @default(60)
+  source          String    @default("ai") // "ai" | "demo"
+  accessProfile   String    @default("none") // "none" | "wchr" | "dpna" | "deaf" (IATA SSR)
+  createdAt       DateTime  @default(now())
+  missions        Mission[]
+  stamps          Stamp[]
+
+  @@index([createdAt])
+  @@index([iata])
+}
+
+model Mission {
+  id          String  @id @default(cuid())
+  tripId      String
+  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  order       Int
+  title       String
+  description String
+  durationMin Int
+  category    String // eat | explore | chill | move | weird | rest
+  location    String
+  tip         String?
+  done        Boolean @default(false)
+  distanceM   Int?    // EVERY BODY BOARDS: roll/walk distance from previous point
+  stepFree    Boolean? // elevator/ramp/level route exists
+  sensory     String? // "quiet" | "moderate" | "loud"
+  stamp       Stamp?
+
+  @@index([tripId])
+}
+
+model Stamp {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  missionId String?  @unique
+  mission   Mission? @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  category  String
+  ink       String   @default("#c2452d")
+  earnedAt  DateTime @default(now())
+
+  @@index([tripId])
+}

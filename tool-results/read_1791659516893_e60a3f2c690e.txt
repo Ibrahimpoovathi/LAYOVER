@@ -1,0 +1,336 @@
+     1→# Worklog
+     2→
+     3→---
+     4→Task ID: 1
+     5→Agent: Z.ai Code (main)
+     6→Task: Research LAYOVER 2026 hackathon, produce winning strategy + build the pre-event base toolkit
+     7→
+     8→Work Log:
+     9→- Fetched and parsed https://tinkerhub.github.io/layover/ (page_reader returned empty; used raw HTML extraction via curl)
+    10→- Decoded event: 10–11 Oct 2026, TinkerSpace Calicut, 6PM–6AM build, 50-mark rubric (built 20 / creativity 10 / travel-connection 10 / execution 5 / demo 5), two-round judging (~20 finalists), solo/duo, AI tools allowed, winner gets Dubai trip
+    11→- Wrote full strategy to PLAN.md: product direction "LAYOVER — turn layovers into AI missions", rubric traceability, tonight's hour-by-hour plan, pitches, risk register
+    12→- Loaded LLM / image-generation / TTS skill docs; confirmed SDK APIs (chat.completions, images.generations, audio.tts)
+    13→- Built "Night Terminal" design system in globals.css (amber/near-black/paper, split-flap CSS, perforation, barcode, stamp-slam, ticker)
+    14→- New layout with Sora + Space Mono, favicon.svg
+    15→- src/lib/airports.ts — 70-airport offline dataset (India-boosted search, CCJ included)
+    16→- src/lib/plan-schema.ts — zod contract (Plan/Mission/CATEGORY_META/fmtDuration/missionOffsets)
+    17→- prisma/schema.prisma — Traveler/Trip/Mission/Stamp; db:push OK
+    18→- API routes (all curl-tested): ai/plan (LLM strict-JSON + zod + 10-min cache + demo fallback), ai/postcard (image, 1344x768), ai/announce (TTS jam voice WAV), airports, trips (POST/GET wall), missions/[id] (toggle → mint/delete stamp)
+    19→- src/lib/demo-mode.ts — DXB/SIN/CCJ demo plans + generic fallback + GATE_CONTROL_LINES
+    20→- Components: departure-board (split-flap cells + auto-cycling rows), airport-combobox (offline keyboard nav), duration-slider, vibe-picker, mission-timeline (light/terminal variants), stamp-badge (SVG textPath stamps), boarding-pass-card (paper pass, BED→IATA, perforation, stub, stamps), generation-status (theatrical overlay)
+    21→- page.tsx: full flow — hero board, planner, generation, pass + stamps + postcard + announce, wall of adventures, sticky footer, demo toggle
+    22→- Fixed: demo mode bypassing cache (bug found via browser test); react-hooks lint errors (derived state); removed unused directive
+    23→- Browser-verified (agent-browser): desktop + mobile (390px) renders, combobox → DXB live generation (6.8s), pass render, mission toggle → MOVE stamp slam, demo mode instant with TRAINING MODE badge, announce/postcard buttons error-free, wall persistence, footer sticky, zero console errors
+    24→- Wrote HACKATHON-NIGHT.md — the 6PM–6AM build handoff with prompts, priorities, pitches, judge-question prep
+    25→
+    26→Stage Summary:
+    27→- Base toolkit COMPLETE and verified end-to-end before the 5 PM check-in
+    28→- Product deliberately NOT finished: missions logic tuning, passport view, sounds, share card, delay re-planner = tonight's work (per event FAQ "meaningful progress during the hackathon")
+    29→- Demo-safety stack proven: demo toggle / API fallback / client-side fallback — 8 AM demo cannot die
+    30→- Key artifacts: PLAN.md (strategy), HACKATHON-NIGHT.md (night build guide), src/components/terminal/* (8 components), 6 API routes, 4 Prisma models
+    31→- Demo flow for judges: pick airport → REQUEST ADVENTURE → theatrical status → boarding pass → complete mission → stamp slams → postcard + announcement
+    32→---
+    33→Task ID: 2-a
+    34→Agent: frontend-styling-expert (subagent)
+    35→Task: Write feature docs 01-night-terminal-design-system.md and 04-boarding-pass-experience.md
+    36→
+    37→Work Log:
+    38→- Read worklog.md, docs/README.md (template), PLAN.md §2–§3, package.json (scripts/deps)
+    39→- Read source: globals.css, layout.tsx, boarding-pass-card.tsx, stamp-badge.tsx, mission-timeline.tsx, generation-status.tsx, plan-schema.ts, page.tsx, demo-mode.ts (GATE_CONTROL_LINES), package.json
+    40→- Grepped src/**/*.tsx to build accurate "used by" columns for every signature CSS class
+    41→- Wrote docs/features/01-night-terminal-design-system.md — full :root token table (real hex), Sora/Space Mono font pipeline via next/font + @theme inline, all 16 signature classes w/ usage notes (--stamp-rot, duplication requirement for .ticker), no-blue rule rationale, dark-only note, scrollbar/background treatment, 6 recipes, 9-row troubleshooting table, verify steps
+    42→- Wrote docs/features/04-boarding-pass-experience.md — data flow page.tsx→pass→stamp with real prop names (plan/done/onToggleMission/source/missionIds), passId hash internals, stamp-badge SVG anatomy (textPath, ROTATIONS, useId), missionOffsets buffer math, GenerationStatus 1.1s line cycle, CATEGORY_META color table, 5 extend recipes (share-card, stamp sound, copy edits, delay re-planner key remount, passport gallery), 8-row troubleshooting, demo-mode click-path verification
+    43→
+    44→Stage Summary:
+    45→- Two template-compliant feature docs created (~140 and ~120 lines, all claims traced to source)
+    46→- Code observations (no code changed): --color-safe is mapped in @theme inline but --safe is never defined in :root, so bg-safe/text-safe are dead utilities (documented); a handful of hard-coded hexes in components (#8a6d3b, #2d7d74, #c2452d…) mirror CATEGORY_META values — flagged as "don't add more"; docs/features/ still missing 02/03/05/06 per the README index
+    47→- No source/config files modified; worklog appended only
+    48→---
+    49→Task ID: 2-b
+    50→Agent: general-purpose (subagent)
+    51→Task: Write feature docs 03-ai-mission-pipeline.md and 05-demo-mode-fallback-chain.md
+    52→
+    53→Work Log:
+    54→- Read worklog.md, docs/README.md (template), PLAN.md §3 before writing (docs convention: all sections + real names/paths/runnable curls, <250 lines)
+    55→- Read all source under documentation: api/ai/plan/route.ts, api/ai/postcard/route.ts, api/ai/announce/route.ts, lib/plan-schema.ts, lib/demo-mode.ts, lib/airports.ts, app/page.tsx; plus grep of boarding-pass-card.tsx (TRAINING MODE badge = source === "demo") and generation-status.tsx (GATE_CONTROL_LINES @1100ms)
+    56→- Wrote docs/features/03-ai-mission-pipeline.md (139 lines): full request/response contracts for plan/postcard/announce, the 10-step plan flow (validate → forceDemo short-circuit → 10-min Map cache → ZAI + 48s race → extractJson → zod → hard-correction → cache.set → source:"ai" / catch → demo + note), full planSchema/missionSchema limits table, SYSTEM_PROMPT design rules, endpoint reference table with cache/timeout column, 5 extend recipes, 7-row troubleshooting table, 6 curl verifications against localhost:3000
+    57→- Wrote docs/features/05-demo-mode-fallback-chain.md (89 lines): 3-layer safety model with exact mechanics, demo-mode.ts exports table (DEMO_PLANS DXB/SIN/CCJ summaries, genericDemoPlan, GATE_CONTROL_LINES, fakeStreamChunks), why DXB/SIN/CCJ exist, "demo never reads cache" rule, 5 extend recipes (new bespoke plan, theatrical lines, shift+D shortcut, offline test, streaming demo), troubleshooting, curl + UI + DevTools-offline verification
+    58→
+    59→Stage Summary:
+    60→- Artifacts: docs/features/03-ai-mission-pipeline.md, docs/features/05-demo-mode-fallback-chain.md; no source/config files touched
+    61→- Surprises noted in docs: SYSTEM_PROMPT is sent as role "assistant" (not "system") in plan route; prompt limits are softer than zod (prompt says 2–5 missions/buffer ≤150, zod allows 2–6/buffer ≤180 — zod is the real enforcer); demoFallback never shrinks totalDurationMin below the baked plan window (Math.max); demo path skips planSchema.parse (no runtime guard on pre-baked plans); postcard failure is HTTP 200 source:"none" while announce failure is the only 503; page.tsx mobile demo toggle lives in the footer (sm:hidden), desktop in header
+    62→---
+    63→Task ID: 2-c
+    64→Agent: general-purpose (subagent)
+    65→Task: Write feature docs 02-input-flow-and-airport-data.md and 06-database-and-wall.md
+    66→
+    67→Work Log:
+    68→- Read worklog.md, docs/README.md (template), PLAN.md §3, then all 12 target sources (airports.ts, api/airports, combobox, slider, vibe-picker, departure-board, schema.prisma, db.ts, trips route, missions/[id] route, api/route.ts, page.tsx) plus plan-schema.ts and ai/plan route for cross-references
+    69→- Wrote docs/features/02-input-flow-and-airport-data.md (117 lines): Airport type + real dataset count (74, not 70), scoring tiers table (+6 India boost), findAirport, /api/airports contract (client never calls it — offline by design), combobox keyboard/140ms-blur behavior, slider 60–720/step15 + PRESETS, 5 vibes, FlapCell/SplitFlapText/DepartureBoard mechanics + BOARD_ROWS location, generate() request body
+    70→- Wrote docs/features/06-database-and-wall.md (143 lines): all 4 Prisma models field-by-field, relation graph + stamp semantics (mint on done/delete on untoggle, missionId@unique), db.ts singleton, POST/GET /api/trips + PATCH /api/missions/[id] exact behavior, real triggers in page.tsx (saveTrip fires only on successful /api/ai/plan; client-side fallback path does NOT archive), zod limits reference table, 5 extend recipes, troubleshooting table
+    71→- Verified live against running dev server: curl /api/airports?q=koz → CCJ ✅; validated the doc's trips payload against real planSchema via bunx tsx (VALID); executed full POST /api/trips → GET ?limit=3 → PATCH done:true (stamp ink #2d7d74, category explore) → PATCH done:false (stamp null) cycle ✅; then deleted the doc-tester trip+traveler (cascades) so the DB is exactly as found
+    72→
+    73→Stage Summary:
+    74→- Artifacts: docs/features/02-input-flow-and-airport-data.md + docs/features/06-database-and-wall.md (both follow the docs/README.md template, under 250 lines, with runnable verified curls)
+    75→- Surprise 1: AIRPORTS has 74 entries, not the ~70 claimed in worklog/PLAN (18 India / 8 Gulf / 19 Asia / 14 Europe / 8 Americas / 3 Oceania / 4 Africa)
+    76→- Surprise 2: Port Blair is stored with iata "IXC2" (4 chars, real code IXZ) — search works but planSchema.airport.iata requires exactly 3 chars, so Port Blair plans would never archive to the wall (saveTrip fails silently). Fix = one-line rename in airports.ts (documented in doc 02 recipes/troubleshooting)
+    77→- Surprise 3: stamps "not minting" can't be a CATEGORY_META issue — the PATCH route falls back to chill ink for unknown categories; the real cause is an unarchived trip (missionIds empty), which is what the doc's troubleshooting says
+    78→---
+    79→---
+    80→Task ID: 2
+    81→Agent: Z.ai Code (main)
+    82→Task: Build the documentation system — main README, docs/ convention, per-feature deep-dive docs (user request: detailed readme + worklog + separate readme per major feature for future reference and error fixing)
+    83→
+    84→Work Log:
+    85→- Audited state: base toolkit from Task 1 complete + verified; dev server running
+    86→- Wrote README.md (150 lines): quickstart, 30-sec demo script, architecture tree, API reference table, demo-mode safety, Night Terminal token cheat-sheet, feature ladder, documentation protocol, troubleshooting quick hits
+    87→- Wrote docs/README.md: documentation convention (when to create a feature doc, exact template, quality bar), index of feature docs, worklog discipline
+    88→- Dispatched 3 parallel doc agents: 2-a → docs 01 (design system) + 04 (boarding pass); 2-b → docs 03 (AI pipeline) + 05 (demo mode); 2-c → docs 02 (input flow) + 06 (database/wall)
+    89→- All 6 feature docs follow the template: TL;DR / rubric tie / files / how it works / reference / extend-tonight recipes / symptom→cause→fix troubleshooting / paste-run verification
+    90→- Fixed 2 real bugs found by doc agents while reading code:
+    91→  1. airports.ts: Port Blair IATA "IXC2" (4 chars, invalid) → "IXZ" — such trips would silently fail planSchema length(3) and never archive
+    92→  2. globals.css: added missing --safe token (#3fa66a) that --color-safe mapped to (dead bg-safe utility)
+    93→- Verified: bun run lint clean; curl smoke tests — health OK, IXZ search OK, forceDemo instant with correct DXB plan, live AI plan for AMS source:"ai" with 4 missions
+    94→- Browser-verified golden path (agent-browser): page loads with zero console errors → demo toggle ON → DXB → TRAINING MODE badge → pass with 4 demo missions → complete mission → button flips to Undo (PATCH round-trip works)
+    95→
+    96→Stage Summary:
+    97→- Documentation system live: README.md + docs/README.md + 6 feature deep-dives (~960 doc lines total); every future feature/change gets docs/features/NN-slug.md per convention
+    98→- 2 latent data/token bugs fixed and verified live
+    99→- App re-verified end-to-end after fixes: lint clean, APIs green, browser golden path green
+   100→---
+   101→Task ID: 3
+   102→Agent: Z.ai Code (main)
+   103→Task: Write a plain-English (layman) explanation of the site and its complete working, in an md file
+   104→
+   105→Work Log:
+   106→- Wrote EXPLAINER.md (~190 lines): big idea in 30 seconds, full walk-through of everything visible on the page (flip board, form, button, pass, stamps, postcard, announcement, wall, demo switch), the press-the-button journey told as a restaurant analogy (order → waiter → chef texts AI writer → teacher checks homework → photocopy drawer fallback → plate out → diary entry), a cast-of-characters table mapping plain names to technical files, the 3-umbrella offline safety story, a plain-language journey map, and an FAQ
+   107→- Added EXPLAINER.md to the docs index in docs/README.md and to the documentation table in README.md
+   108→- Docs-only change: no source code touched, no re-verification needed
+   109→
+   110→Stage Summary:
+   111→- EXPLAINER.md is the non-technical narrative doc — usable to brief teammates, explain to mentors/judges who ask "so what does it do?", or onboard a friend to help tonight
+   112→- Every technical term is introduced after its plain-English translation; tech names appear only in the reference table
+   113→
+   114→---
+   115→Task ID: 4-b
+   116→Agent: general-purpose (subagent)
+   117→Task: Write feature doc 07-transport-modes.md for the AIR ⇄ ROAD mode engine
+   118→
+   119→Work Log:
+   120→- Read worklog.md, docs/README.md (exact template), then all 8 mode-engine sources before writing: src/lib/modes.ts, src/lib/airports.ts (ROAD_STOPS / ALL_STOPS / searchAirports 3rd param), src/lib/plan-schema.ts (MODE_IDS + optional planSchema.mode), src/lib/demo-mode.ts (ROAD_DEMO_PLANS KBS+MJS, genericRoadPlan, GATE_CONTROL_LINES still exported), src/app/api/ai/plan/route.ts (body.mode, cacheKey mode:iata:durationMin:vibe, ROAD_SYSTEM_PROMPT "ROUTE CONTROL" vs SYSTEM_PROMPT "GATE CONTROL", demoFallback branch, plan.mode hard-correct), src/app/api/trips/route.ts (Trip.mode store/return), src/app/api/airports/route.ts (?mode=), prisma/schema.prisma (Trip.mode String @default("air")); also read docs/features/05 for tone/length calibration
+   121→- Wrote docs/features/07-transport-modes.md (112 lines, template-exact): TL;DR; Why it exists (hackathon pivot — theme widened to ALL travel, flip = the demo moment, doubles creativity/travel-connection marks); Files table (8 sources + component layer marked 🚧); How it works (5-step mode flow: switch → re-skin via MODE_META + DepartureBoard re-key → mode-aware search (s.mode ?? "air" pool filter) → mode-aware persona → same zod/stamps/wall, plus mode-aware fallback chain incl. demo-never-reads-cache); Reference (full ModeMeta air-vs-road field table, 14 ROAD_STOPS list, mode-aware API table, component prop table from spec: ModeSwitch radiogroup/amber/44px, firstColLabel, lines, passTitle/passSubtitle/routeFrom DOOR, combobox mode+placeholder, page.tsx behaviors); Extend tonight (RAIL MODE in 6 steps + WATER + per-mode accents + per-mode board rows, with the /api/trips road-air ternary widening caveat); 7-row troubleshooting (search shows airports, air missions in road mode, old wall trips = default column, ROAD_DEMO_PLANS key mismatch, cache flush restart, zod mode enum, db:push); Verify (4 curls: road search, KBS forceDemo, MJS live, DXB air regression + browser click-path to ROAD PASS)
+   122→- Added ONE row to docs/README.md "Index of feature docs": | 07 | 07-transport-modes.md | AIR ⇄ ROAD mode engine, road stops, ROUTE CONTROL persona, mode-aware components |
+   123→- Docs-only task: no source code touched
+   124→
+   125→Stage Summary:
+   126→- Artifacts: docs/features/07-transport-modes.md + index row in docs/README.md
+   127→- All lib/API claims traced to real code read this session (MODE_META 15 fields × 2 modes, 14 road stops, cacheKey format, both SYSTEM_PROMPT personas, hard-correct plan.mode, Trip.mode default "air"); component claims match the parallel-agent spec verbatim and are marked 🚧 "being built in parallel"
+   128→- Noted for tonight: /api/trips stores mode via `plan.mode === "road" ? "road" : "air"` ternary — a future rail/water mode needs that widened (flagged in the doc's rail recipe, not changed per task scope)
+   129→- Doc count in index now 7 (01–07); feature doc is 112 lines (dense tables), under the ~250 cap
+   130→---
+   131→---
+   132→Task ID: 4-a
+   133→Agent: frontend agent (subagent)
+   134→Task: Make component layer mode-aware for AIR ⇄ ROAD transition
+   135→
+   136→Work Log:
+   137→- Read worklog.md, docs/README.md, lib/modes.ts (MODE_META / MODE_LIST / TransportMode), lib/airports.ts (searchAirports optional 3rd mode param, StopMode), and all 5 target component files before editing
+   138→- CREATED src/components/terminal/mode-switch.tsx — "use client" AIR⇄ROAD segmented control with exact signature ModeSwitch({ mode, onChange }: { mode: "air" | "road"; onChange: (m: "air" | "road") => void }); registry-driven from MODE_LIST, Plane/Bus icon via m.icon ternary, role=radiogroup("Transport mode") + per-button role=radio/aria-checked/aria-label("Air mode"/"Road mode"), min-h-11 (44px) px-4 targets, font-mono text-xs font-bold tracking-[0.25em] with meta.label, amber-only active state bg-primary text-primary-foreground + shadow-[0_0_16px_-4px_rgba(245,166,35,0.8)], inactive text-muted-foreground hover:text-foreground, container inline-flex rounded-lg border border-border bg-card/60 p-1, transition-all duration-200, cn() for class merge
+   139→- EDITED departure-board.tsx — added ONE optional prop firstColLabel (default "FLIGHT") to DepartureBoard and used it in the desktop header grid first column; nothing else touched
+   140→- EDITED generation-status.tsx — added ONE optional prop lines (default GATE_CONTROL_LINES, import kept); both usages (interval modulo + displayed text) now read `lines`; effect dep array now [lines] so the interval re-arms per line set. DEVIATION (lint-forced): the "reset line to 0 when lines identity changes" could NOT be setLine(0) inside the effect — repo lint (react-hooks/set-state-in-effect from eslint-config-next) errors on synchronous setState in effects; implemented instead as React's documented render-time state adjustment (prevLines state + identity compare → setPrevLines(lines); setLine(0)). Behavior identical: cycle restarts at line 0 on mode switch
+   141→- EDITED boarding-pass-card.tsx — added optional passTitle (default "BOARDING PASS"), passSubtitle (default "LAYOVER TERMINAL"), routeFrom (default "BED"); replaced the card's hard-coded equivalents: header overline "LAYOVER ADVENTURE PASS" → {passTitle}, issuer line "GATE CONTROL ISSUE" → {passSubtitle} (kept "{passId} · " prefix and styling), route origin "BED" → {routeFrom}. Zero styling/logic changes; existing props (plan, done, onToggleMission, source) untouched. NOTE: unwired render now shows "BOARDING PASS"/"{passId} · LAYOVER TERMINAL" instead of the old copy — page.tsx must pass MODE_META[mode].passTitle/passSubtitle/routeFrom when wiring
+   142→- EDITED airport-combobox.tsx — added optional mode ("air" | "road"); BOTH search branches now thread mode as the 3rd searchAirports arg: query branch searchAirports(query, 8, mode) and empty-query branch searchAirports("", 6, mode) (replaced hard-coded AIRPORTS.slice(0, 6) so road mode surfaces bus stands on open — output is byte-identical to before for air/undefined since ALL_STOPS starts with AIRPORTS; removed the now-unused AIRPORTS import). The hard-coded sr-only label "Departure or layover airport" now renders the placeholder prop; input placeholder default stays "City, airport or code…" so unwired visuals are unchanged
+   143→- Verification: bun run lint → clean, 0 errors; bunx tsc --noEmit → 0 errors in src/ (only pre-existing errors in examples/ + skills/ sandbox dirs, which are outside the app and eslint-ignored). page.tsx untouched and still compiles (all new props optional)
+   144→
+   145→Stage Summary:
+   146→- Component layer is mode-aware and ready for page.tsx wiring. Exact exports/props for the main agent:
+   147→  - import { ModeSwitch } from "@/components/terminal/mode-switch" → <ModeSwitch mode={mode} onChange={setMode} /> (mode: "air" | "road"; onChange: (m: "air" | "road") => void)
+   148→  - <DepartureBoard rows={rows} firstColLabel={meta.firstColLabel} /> — optional, defaults "FLIGHT"
+   149→  - <GenerationStatus airportLabel={...} lines={meta.statusLines} /> — optional, defaults GATE_CONTROL_LINES
+   150→  - <BoardingPassCard plan done onToggleMission source passTitle={meta.passTitle} passSubtitle={meta.passSubtitle} routeFrom={meta.routeFrom} /> — all optional, defaults "BOARDING PASS" / "LAYOVER TERMINAL" / "BED"
+   151→  - <AirportCombobox value onSelect mode={mode} placeholder={meta.stopPlaceholder} /> — both optional
+   152→- Suggested wire map (all from MODE_META[mode]): firstColLabel, statusLines, passTitle, passSubtitle, routeFrom, stopPlaceholder
+   153→- Known deviations for the main agent: (1) GenerationStatus reset is render-time adjustment, not setState-in-effect (lint ban); (2) combobox empty-query dropdown is now mode-filtered (air behavior identical, road shows KBS/VYT/THP/…); (3) boarding-pass header copy changes if props unwired; (4) combobox's decorative Plane icon NOT mode-swapped (out of scope per "nothing else changes" — 1-line swap with meta.icon if wanted later)
+   154→---
+   155→Task ID: 4
+   156→Agent: Z.ai Code (main)
+   157→Task: Hackathon kickoff pivot — theme widened to ALL travel; implement the AIR ⇄ ROAD transport-mode transition on top of the completed air LAYOVER product
+   158→
+   159→Work Log:
+   160→- Read page.tsx, departure-board, generation-status, airports.ts, airports API before editing
+   161→- Created src/lib/modes.ts — transport-mode registry (TransportMode, ModeMeta, MODE_META, MODE_LIST, ROAD_CONTROL_LINES): hero text, board labels, pass title/subtitle, route joke (BED→ / DOOR→), status lines, announce phrasing per mode
+   162→- airports.ts: +14 ROAD_STOPS (KBS Kozhikode KSRTC, VYT Kochi, THP TVM, QLN Kollam, TCR Thrissur, KNR Kannur, ALP Alappuzha, MJS Bengaluru Majestic, CMT Chennai CMBT, GPM Coimbatore, MYS Mysuru, RSP/NHT/DHB highway halts); searchAirports(query, limit, mode?) pool filter; ALL_STOPS; findAirport searches all
+   163→- plan-schema.ts: +MODE_IDS/PlanMode; planSchema gains optional mode (backwards compatible)
+   164→- demo-mode.ts: +ROAD_DEMO_PLANS (KBS "The Mavoor Road Miniseries", MJS "Operation Majestic") + genericRoadPlan; air plans untouched
+   165→- api/ai/plan: mode-aware — cacheKey mode:iata:durationMin:vibe, ROAD_SYSTEM_PROMPT ("ROUTE CONTROL" persona: bus stands, dhabas, crew-chai diplomacy), demoFallback branches by mode, plan.mode hard-corrected; air demo fallback now spreads explicit mode
+   166→- prisma Trip.mode @default("air") + db:push; api/trips stores/returns mode; api/airports ?mode= filter; api/ai/postcard road scene (bus on highway vs airplane)
+   167→- Task 4-a (subagent): mode-switch.tsx (new), departure-board firstColLabel, generation-status lines prop, boarding-pass-card passTitle/passSubtitle/routeFrom props, airport-combobox mode+placeholder — lint clean
+   168→- Task 4-b (subagent): docs/features/07-transport-modes.md + docs index row
+   169→- page.tsx wired: mode state + switchMode (clears mismatched stop), ModeSwitch above hero, SplitFlapText/DepartureBoard/ticker re-keyed by mode (full re-skin moment), ROAD_BOARD_ROWS (RT-20x, DUBAI row kept), planner heading/status per mode, plan request carries mode, client fallback branches genericDemoPlan/genericRoadPlan, pass renders in plan's OWN mode (passMeta), announcement uses announceKind, wall shows ✈/🚌 badges, footer v2 AIR⇄ROAD
+   170→- Verified: lint clean; curls — air demo (mode:air), road demo KBS, road generic RSP, road search filter, live road AI MJS (source:ai, "Kempegowda Chronicles", Platform Archaeology/Conductor's Confab missions)
+   171→- Browser-verified: air render → flip ROAD → full re-skin (WHERE THE ROAD WAITS?, RT-20x bay board, FILE YOUR ROAD PLAN, bus-stand combobox) → demo KBS → ROAD PASS + TRAINING MODE + Sulaimani summit → mission toggle stamps → flip back AIR → hero restores, pass keeps road identity; zero console errors
+   172→- Docs: HACKATHON-NIGHT.md "THE PIVOT" section (transition = the demo now, 4-beat judge flow, mode extension ideas); README updated (tagline, demo script, arch, API table, demo plans, feature ladder)
+   173→
+   174→Stage Summary:
+   175→- LAYOVER is now mode-agnostic: one mission engine, two worlds — air (GATE CONTROL) and road (ROUTE CONTROL)
+   176→- The live AIR⇄ROAD re-skin is the Round-2 showpiece: flip switch → board re-flips → persona swaps → road missions
+   177→- Road demo-safety: KBS/MJS pre-baked + genericRoadPlan + offline road search — the 8 AM road demo cannot die either
+   178→- Adding RAIL/WATER later = 1 registry entry + stops + optional prompt (recipe in docs/features/07)
+   179→
+   180→---
+   181→Task ID: 4
+   182→Agent: Z.ai Code (main)
+   183→Task: Hackathon scope expanded to travel-in-general — design the WINGS ⇄ WHEELS transformation (plan only, build on "go")
+   184→
+   185→Work Log:
+   186→- Read current v2 state: mode switch + ROAD mode already existed but only as label swaps (same amber skin, same boarding pass, bus-stand stops only, no train)
+   187→- Captured user's new direction: full highway-sign UI for road mode, old bus ticket artifact replaces boarding pass, stamps kept, AIR/ROAD renamed WINGS/WHEELS, WHEELS = bus + train
+   188→- Wrote complete build plan to PLAN-WHEELS.md: rename map, highway-sign design spec (bitumen bg, sign-green panels, hazard yellow), old bus ticket anatomy (stub, punch-holes, fare joke, train variant), journey-model input (FROM/TO + BUS/TRAIN toggle), schema/API additions (vehicle, destination, journey-mode ROUTE CONTROL prompt, 3 bespoke demo journeys), transition choreography, 6-phase build order (~5h), verification checklist, risks, docs protocol
+   189→
+   190→Stage Summary:
+   191→- PLAN-WHEELS.md ready for user review — awaiting "go" before any implementation
+   192→- Key decisions: internal mode ids stay "air"/"road" (zero DB churn), stamps mechanic untouched, ticket = new self-contained component, vehicle field optional for back-compat
+   193→---
+   194→Task ID: 5-a
+   195→Agent: frontend-styling-expert
+   196→Task: Build the old bus ticket component (WHEELS mode artifact)
+   197→
+   198→Work Log:
+   199→- Read worklog.md (last 80+ lines: Task 4 WHEELS pivot + 4-a component layer context), plan-schema.ts (Plan, VEHICLE_META, CATEGORY_META, fmtDuration, missionOffsets, VehicleId), stamp-badge.tsx (StampBadge props contract), boarding-pass-card.tsx (air twin: hash trick, perforation/notch mechanics, a11y patterns), mission-timeline.tsx (fmtClock pattern), globals.css (ticket-enter, perforation-v/h, notch, barcode, qr-blocks, punch-pop, blink-slow)
+   200→- CREATED src/components/terminal/bus-ticket-card.tsx — the only source file written this task
+   201→- Export/props contract: named export BusTicketCard, "use client", no default export; { plan: Plan; done: Record<number, boolean>; onToggleMission: (index: number) => void; source?: string } — drop-in twin of BoardingPassCard's core props
+   202→- Derived: vehicle = plan.vehicle ?? "bus"; origin = plan.airport.city; dest = plan.destination?.city ?? "& BACK"; band = VEHICLE_META[vehicle].ticketBand; fare = plan.fareJoke ?? VEHICLE_META[vehicle].fare; vehicleLabel "BUS · CLASSIC" / "TRAIN · EXPRESS"; ticketId TK-XXXX + 6-digit zero-padded serial via the pass's (h<<5)-h char hash (useMemo, SSR-safe, serial = Math.abs(h) % 1000000 padStart 6); offsets = missionOffsets(plan); local fmtClock → T+HH:MM; allDone guarded like the pass
+   203→- Anatomy built to spec: mobile stub strip / lg vertical ADMIT ONE column ([writing-mode:vertical-rl] rotate-180, punched dashed hole, TK NO. + ticket id); perforation divider copied 1:1 from the pass (notches + perforation-v on lg, perforation-h on mobile); red band inside body with TRAINING MODE badge when source === "demo"; route row with Bus/TrainFront ink circle + dashed lanes + ArrowRight, dest in #B3331F; ROUTE chip (bg-[#B3331F]/10) + Sora adventureTitle; 4-cell meta grid (DATE "NIGHT SERVICE · 10-11 OCT" / VEHICLE / WINDOW / FARE truncate+title); JOURNEY STAGES — TAP TO PUNCH with blink-slow ACTIVE ⇄ teal MISSION CLEAR pill; punch buttons (rounded-full border-2, aria-pressed, min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 touch targets, done = punched hole bg-background + Check in punch-pop, line-through title, MapPin location + Lightbulb tip); funFact fine print; barcode + TK/serial column; "IF LOST, THE ADVENTURE IS STILL YOURS" / "CONDUCTOR: ____________"; right panel lg:w-[248px] with TRAVEL STAMPS + "YOUR TICKET IS YOUR PASSPORT", StampBadge per mission (size 64, earned/animate from done), ✦ PERFECT RUN in #2d7d74, FARE PAID IN CHAI + qr-blocks
+   204→- Palette lock respected: cream #F4EFE4 / ink #17150F / red #B3331F + teal #2d7d74 (perfect-run/pill only) + CATEGORY_META inks; zero blue/indigo anywhere; only the sanctioned globals.css classes used, everything else inline Tailwind; lucide-only icons (ArrowRight, Bus, Check, Lightbulb, MapPin, TrainFront — TrainFront confirmed present in lucide-react 0.525.0)
+   205→- Deviations (deliberate, small): (1) pass's faint print-texture overlay added inside the body for paper realism (same inline gradient as the air twin); (2) meta-grid values unified at text-[10px] (spec pinned FARE only; text-sm values would overflow sm:grid-cols-4 cells); (3) origin/dest get break-words + leading-tight for long destination city strings; (4) band <p> gets min-w-0 so the 40-char "LAYOVER STATE ROADWAYS · WHEELS DIVISION" wraps instead of clipping on 390px phones; (5) the mobile stub|body perforation-h is rendered at the body's top edge (mirrors the pass's painting order so the tear dots render fully on both sides); (6) punch Check strokeWidth 2.5 for ink weight
+   206→- Per protocol: dev server and lint NOT run; read-only type check (tsc --noEmit) performed to protect the deliverable
+   207→
+   208→Stage Summary:
+   209→- WHEELS artifact complete: src/components/terminal/bus-ticket-card.tsx (strict TS, zero any, named export, fully responsive: lg = 136px stub + body + 248px stamps panel; mobile = strip → body → stamps)
+   210→- Wire map for main agent: import { BusTicketCard } from "@/components/terminal/bus-ticket-card"; render INSTEAD of BoardingPassCard when plan.mode === "road" with the exact same props (plan, done, onToggleMission, source) — no extra props, nothing else to change
+   211→- Behavior parity with the air twin: same deterministic id scheme (TK- prefix + serial), same done/onToggleMission flow, StampBadge slam per mission, demo plans show TRAINING MODE in the red band, perfect-run state surfaces in both the ACTIVE pill and the stamp panel
+   212→
+   213→---
+   214→Task ID: 5
+   215→Agent: Z.ai Code (main)
+   216→Task: Build the complete WINGS ⇄ WHEELS site per PLAN-WHEELS.md (user said "go")
+   217→
+   218→Work Log:
+   219→- Phase A1: planSchema +vehicle/destination/routeCode/fareJoke (all optional); modes.ts full WINGS/WHEELS rebrand (labels, hero "WHICH ROAD NEXT?", sublines, planner/button/duration/footer copy); airports.ts +StopKind +8 railway stations (CLT ERS TVC SBC MAS CSMT HWH SC) + vehicle-aware search with excludeIata
+   220→- Task 5-a (frontend-styling-expert subagent): built src/components/terminal/bus-ticket-card.tsx — vintage bus ticket (ADMIT ONE stub, red band, punch-hole stages, stamp panel, train variant), worklog appended, tsc clean
+   221→- Phase A2/B: WHEELS_DEMO_JOURNEYS (KBS>MJS bus, CLT>TVC train, BOM>PNQ) + ROUTE_FLAVOR + genericWheelsPlan; prisma Trip +vehicle/destination/routeCode + db:push; plan API journey-mode ROUTE CONTROL prompt + pair-keyed demo lookup + hard-corrections; postcard train/bus scenes; trips API persists wheels fields
+   222→- Phase C: globals.css [data-mode="road"] token overrides + sign-panel/hazard-stripes/road-lane/board-glow-road/punch-pop/ticket-enter/pass-exit/theme-fade utilities
+   223→- Phase D: page.tsx full integration — data-mode root, journey form (BUS·ROADS / TRAIN·RAILS toggle, FROM/TO comboboxes), pass⇄ticket swap, highway advisory board in sign frame, wheels ticker/footer, wall chips (WINGS / WHEELS·BUS / WHEELS·TRAIN + "X → Y"), conductor announcement branch; combobox icon/vehicle/exclude props; slider label prop
+   224→- Phase E/F: fixed lowercase <vehicleIcon/> React casing bug (dev overlay "2 Issues" → 0); fixed ticket route row city-crush (switched to big stop codes + city captions); ticket max-w-4xl + planner section max-w-5xl while ticket shows (body width 275→630px); Tailwind JIT cache miss on lg:w-[210px] (touch globals.css rescan); restarted dev server for fresh Prisma client
+   225→- Verification: lint clean; curl — wheels bus/train demos instant, wings DXB regression, station search floats trains, generic fallback NH-∞, trips archive persists vehicle/destination/routeCode, wall returns chips; live AI journey Kochi→Mysuru "Spice Route Serenity" NH-766 GHAT 5 stages source:ai
+   226→- agent-browser golden paths: WINGS render → flip WHEELS (theme flip) → demo KBS→Bengaluru bus → ticket (KBS→MJS, NH-766 chip, punch stage 1 → aria-pressed + MOVE stamp earned + PATCH 200) → wall chips → NEW → wings DXB pass (BED→DXB) → CLT→TVC train ticket (rail band, 3 CHAI + 1 VADA) → mobile 390px stub strip + 44px targets; screenshots in shots/01–16
+   227→
+   228→Stage Summary:
+   229→- LAYOVER v3 "Two Worlds, One Terminal" is LIVE: WINGS amber terminal + WHEELS highway-sign world with the old bus ticket; stamps mechanic byte-identical across both; demo chain covers both worlds; docs/features/07-wings-wheels-highway-mode.md written
+   230→- Key bugs found+fixed during verification: React casing, ticket route-crush, stale Prisma client, Tailwind arbitrary-class JIT miss
+   231→
+   232→---
+   233→Task ID: 6
+   234→Agent: Z.ai Code (main)
+   235→Task: "Airport-related UI must be COMPLETELY changed in the wheels section" — audit + eliminate every airport remnant from WHEELS mode
+   236→
+   237→Work Log:
+   238→- Audited page.tsx + all 10 terminal components + libs for airport language/amber styling visible in road mode; found 6 leaks
+   239→- globals.css GLOW ENGINE: added `[data-mode="road"] .board-glow` (green sign glow override) + semantic `.glow-amber` / `.glow-strong` classes with road-mode overrides (hazard yellow + green halo) — one CSS block re-tints every glow in the UI
+   240→- Replaced all hardcoded amber arbitrary shadows: page header logo tile, mode-switch active pill, vibe-picker selected chip, plan CTA button → now use semantic classes
+   241→- page.tsx copy: hero eyebrow mode-aware (GATE ∞ → MILE ∞), header tagline mode-aware (DEAD HOURS → DEAD MILES)
+   242→- duration-slider: `accent-[#f5a623]` → `accent-primary` (tracks --primary, flips to hazard yellow)
+   243→- airport-combobox: empty state mode-aware (TRY A MAJOR HUB → TRY A MAJOR JUNCTION OR STATION)
+   244→- vibe-picker: +mode prop + ROAD_HINTS map (foodie "eat the terminal" → "eat every dhaba dry")
+   245→- Bonus: fixed mobile hero flap clipping ("ICH ROAD NEX") — cell size 8.5vw → 5.6vw on mobile; both hero texts now fit 390px
+   246→- Verified: lint clean; agent-browser full pass — wings render → wheels flip (header bus tile, DEAD MILES, MILE ∞, WHICH ROAD NEXT?, hazard slider, green-glow duration, glow CTA) → demo KBS→MJS bus ticket → punch stage 1 → stamp earned (1) → flip wings (amber regression clean, GATE ∞ back) → train ERS→TVC ticket (3 CHAI + 1 VADA, rail band) → mobile 390px both worlds → wings DXB pass regression → zero console errors, all API 200
+   247→- Docs: docs/features/08-wings-wheels-highway-mode.md + v3.1 section (leak table + glow-engine rule)
+   248→
+   249→Stage Summary:
+   250→- WHEELS is now 100% airport-free: no gate/terminal/hub words, no amber glows — bitumen + hazard yellow + sign green everywhere
+   251→- Glow engine pattern established: shared components use semantic glow classes; [data-mode="road"] overrides keep both worlds in sync from one CSS block
+   252→- Wings regression byte-identical; screenshots shots/20–33
+   253→
+   254→---
+   255→Task ID: 7
+   256→Agent: Z.ai Code (main)
+   257→Task: Review + verify the postcard functionality end-to-end (both worlds), add SAVE POSTCARD download
+   258→
+   259→Work Log:
+   260→- Read api/ai/postcard/route.ts + page.tsx postcard UI: 3 scene branches (air / bus ghat road / train backwater bridge), 100s timeout race, graceful ok:true source:none fallback, route-aware caption in road mode
+   261→- curl-verified all 3 API branches: air DXB 126KB, bus Kozhikode 241KB, train Ernakulam 236KB — all source:ai; visually inspected bus + train images (KSRTC-style bus on hairpin with tea stall; train on backwater bridge at dusk; no unwanted text/watermarks)
+   262→- Browser golden path: wheels demo KBS→MJS → POSTCARD → spinner ("THE PRESS IS INKING…") → image arrives ~27s → tilted cream postcard under ticket with caption "GREETINGS FROM THE NH-766 · VIA WAYANAD GHAT — WISH YOU WERE ON BOARD"; wings NEW → DXB → POSTCARD → "GREETINGS FROM DUBAI — WISH YOU WERE HERE"
+   263→- Fixed test-side flake: POSTCARD click must wait for the smooth-scroll to settle (scrollIntoView block:center before clicking) — sticky header was swallowing the click, not an app bug
+   264→- Enhancement: +SAVE POSTCARD download anchor on the postcard paper (data-url download, filename layover-postcard-<dest|code>.png, 44px touch target on mobile, Download icon) — judges can take the postcard home
+   265→- Verified: lint clean; SAVE anchor renders + downloads with zero console errors; 6× POST /api/ai/postcard 200 in dev.log
+   266→
+   267→Stage Summary:
+   268→- Postcard functionality confirmed fully working in both worlds (API + UI + fallback path); images are demo-grade vintage travel posters
+   269→- New: SAVE POSTCARD download button on the rendered postcard
+   270→- Test pattern noted: scroll element to viewport center before clicking — page uses smooth-scroll + sticky header
+   271→
+   272→---
+   273→Task ID: 7
+   274→Agent: Z.ai (main)
+   275→Task: "checkout the postcard functionality" — user hit THE PRESS IS INKING… → PRESS JAMMED — POSTCARD PENDING. Diagnose, fix, verify both worlds.
+   276→
+   277→Work Log:
+   278→- Located postcard code: UI block + makePostcard() in src/app/page.tsx, API at src/app/api/ai/postcard/route.ts
+   279→- Forensics on dev.log: 6 postcard POSTs, ALL returned 200 (25–61s), ZERO [ai/postcard] catch-line logs ([ai/plan] fallback lines DO land in the log → stderr capture proven). Route never failed server-side.
+   280→- Direct curl to localhost:3000 succeeded every time (41s, source:"ai") → the severing is a ~30s proxy timeout in the preview chain between browser and Next, not the SDK
+   281→- Rebuilt API as async job queue: POST returns {ok,id} in <100ms, background runPress() with 110s deadline + 1 retry, GET ?id= polls, 15min in-memory TTL
+   282→- Rebuilt client makePostcard as poll loop (2.5s interval, 150s window, 4-error tolerance)
+   283→- UX: jam state now has RUN THE PRESS AGAIN button; loading state gained "INK DRIES IN ~1 MIN — HANG TIGHT"
+   284→- WHEELS semantic fix: road postcards illustrate plan.destination.city (where the bus is headed), not the origin stop; alt text follows
+   285→- Prompt upgrade: per-vibe foreground flavor line (foodie → street-food stalls + chai, weird → odd roadside landmark, etc.)
+   286→- Verified: instant POST (0.066s), 5–19ms polls, WINGS DXB postcard rendered in browser (shots/35), WHEELS KBS→MJS postcard rendered after a 72s slow press that would previously have been severed (shots/36) — caption GREETINGS FROM THE NH-766 · VIA WAYANAD GHAT — WISH YOU WERE ON BOARD
+   287→- Docs: created docs/features/09-postcard-press.md (full root-cause + design)
+   288→
+   289→Stage Summary:
+   290→- Postcard press is now proxy-proof: no HTTP request lives longer than ~100ms, so no gateway timeout can ever jam it again
+   291→- Root cause documented for posterity: server always succeeded; preview-chain proxy severed >30s responses (client-side network error → jam state)
+   292→- Slow presses (up to ~90s) now survive; retry button removes the dead end
+   293→- New file: docs/features/09-postcard-press.md; modified: src/app/api/ai/postcard/route.ts (async rebuild), src/app/page.tsx (poll client + jam retry + destination-city postcards)
+   294→
+   295→---
+   296→Task ID: 8
+   297→Agent: Z.ai (main)
+   298→Task: "the wheels section should feel like a complete different site focused on road trips and train journeys. don't bring airport inspired designs to that section and also the transition should be so smooth from the wings to wheels and vice versa"
+   299→
+   300→Work Log:
+   301→- Full airport-DNA audit of page.tsx + terminal components in road mode (hero, board, planner, wall, chrome, tab title)
+   302→- Hero: road mode wraps split-flap in sign-panel gantry (green + white inset border); [data-mode="road"] .flap-cell re-skinned cream-on-green (globals.css)
+   303→- Advisory board: added board-shell class to DepartureBoard root; road mode flattens dark shell so board = ONE continuous green sign
+   304→- Copy: plannerHeading "FILE YOUR JOURNEY PLAN" → "PLOT YOUR ROUTE"; wall → "MILESTONE WALL / logged mile by mile"; emptyWallLine → "NO MILESTONES YET — FLAG OFF THE FIRST JOURNEY"
+   305→- Chrome: hazard-stripe strips on header::after + footer::before (road only, footer got `relative` for correct anchor)
+   306→- Tab title flips with world (useEffect on mode)
+   307→- World-swap choreography: sweep state in page.tsx; 650ms hazard slab L→R into wheels / amber beam R→L into wings; center division pill (ENTERING WHEELS DIVISION / CLEARED BACK TO WINGS); .mode-morphing class crossfades EVERY color 0.55s page-wide, removed after 780ms
+   308→- ModeSwitch rebuilt: single sliding thumb (grid-cols-2 + absolute pill, 300ms cubic-bezier transform), token-driven so it re-tints per world
+   309→- prefers-reduced-motion disables sweep/label/morph
+   310→- Verified via agent-browser: sweep mid-flight shots/41+45, settled worlds shots/42-44+46, KBS→MJS demo journey + punch→stamp regression in new world shots/47, mobile 390px shots/48, title flips, lint clean, dev.log zero errors
+   311→
+   312→Stage Summary:
+   313→- WHEELS is now structurally its own site: highway gantry hero, continuous green advisory sign, PLOT YOUR ROUTE, MILESTONE WALL, hazard-striped chrome — split-flap retained deliberately (station heritage), fully re-tiled green
+   314→- World-swap is a choreographed ~0.8s moment: sweep + division pill + page-wide crossfade + sliding switch thumb
+   315→- Files: globals.css (v4 engine), page.tsx (sweep/gantry/wall/title), mode-switch.tsx (rewrite), departure-board.tsx (board-shell), modes.ts (copy), docs/features/08 v4 section appended
+   316→---
+   317→Task ID: 9
+   318→Agent: Z.ai Code (main)
+   319→Task: Redesign HIGHWAY ADVISORY as a red LED highway variable-message sign; replace the mode transition with a wheel roll (wings→wheels) and a plane flythrough (wheels→wings), keeping it smooth
+   320→
+   321→Work Log:
+   322→- Read worklog, page.tsx, departure-board.tsx, mode-switch.tsx, globals.css sweep section to map the existing advisory + world-swap machinery
+   323→- New src/components/terminal/led-advisory.tsx — red LED dot-matrix VMS: metal cabinet bezel + corner bolts, black LED face with unlit pixel grid (::before) + glass sheen/vignette (::after), 6 cycling advisories (4.4s) that "relight" like real LEDs, blinking LIVE lamp, marching ❯❯❯ chevrons, EXIT ∞ strip, subtle panel flicker, role="img" aria-label
+   324→- New src/components/terminal/world-transition.tsx — overlay with two choreographies: to-road = spoked wheel (conic-gradient tread/rim/hub, nested roll + 1080° spin layers, ground shadow) unrolling an asphalt wipe (grit + hazard edges + dashed centerline); to-air = amber Plane glyph (38° climb attitude) + fading contrail painting an amber night-sky wipe (stars + leading beam); world-tag pill rides bottom-center
+   325→- page.tsx: conditional hero board (DepartureBoard in air, LedAdvisory in road), deleted WHEELS_BOARD_ROWS + old sweep JSX; switchMode rebuilt — data-mode now flips MID-TRANSITION via FLIP_MS=420 timer (vehicle crosses mid-screen → section changes), SWEEP_MS=1250 unmounts overlay, atomic-guard `if (m === mode || sweep) return`, flip/sweep timers in refs with unmount cleanup
+   326→- globals.css: removed dead `[data-mode="road"] .flap-cell/.flap-face/.board-shell` (road never mounts a flap); added LED section (.led-frame/.led-surface/.led-text/.led-dim/.led-dot/.led-blink/.led-relight/.led-march/.led-flicker) and WORLD-SWAP v2 (.world-wipe-road/.world-wipe-air/.road-centerline/.world-wheel/.wheel-*/.world-plane/.plane-glyph/.plane-contrail/.world-tag-*); wipe fades out over final 20% so unmount never pops; reduced-motion covers all new classes
+   327→- HIT A STALE-CSS BUG: heavy globals.css rewrite while next dev ran left the served CSS chunk frozen (browser had old mode-sweep CSS, new JSX unstyled; CSSOM grep proved led-*/world-* MISSING). touch didn't help. Fixed by killing dev server, rm -rf .next, restarting detached via `(setsid bun run dev &)` (plain nohup/setsid got reaped between tool calls — double-fork subshell pattern survived)
+   328→- agent-browser verified: air hero intact (37); wheel roll mid-flight frames with asphalt+centerline+wheel at leading edge (40, 41); settled LED world — red CAUTION/ADVENTURE AHEAD, LIVE, chevrons, bolts (42); plane flythrough early frame — amber glyph + contrail over still-visible road world (46), sky painted (44), WINGS restored (45); mobile 390px both worlds + LED fit (47-50); double-click during transition ignored; data-mode settles road→air; title flips; demo KBS→MJS ticket + stage punch + MOVE stamp regression (51-53); zero page errors/console noise
+   329→- bun run lint clean; dev.log clean; doc 08 v4.1 section written (incl. stale-CSS ops note); shots 37-53
+   330→
+   331→Stage Summary:
+   332→- WHEELS hero is now a genuine red LED highway gantry sign — zero airport/solari DNA in road mode; the two worlds run different machines (mechanical flaps vs electronics)
+   333→- Mode swap is now cinematic and diegetic: a wheel rolls the new road world in; a plane flies the amber sky back in; the section flips mid-flight under the vehicle; colors crossfade underneath; overlay is aria-hidden + pointer-events-none with reduced-motion fallbacks
+   334→- Files: src/components/terminal/led-advisory.tsx (new), src/components/terminal/world-transition.tsx (new), src/app/page.tsx, src/app/globals.css, docs/features/08-wings-wheels-highway-mode.md (v4.1)
+   335→- Ops lesson recorded: heavy globals.css edits can freeze the dev CSS chunk → restart dev server with rm -rf .next and detached double-fork start
+   336→

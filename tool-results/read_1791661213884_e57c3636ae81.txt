@@ -1,0 +1,1124 @@
+     1→@import "tailwindcss";
+     2→@import "tw-animate-css";
+     3→
+     4→@custom-variant dark (&:is(.dark *));
+     5→
+     6→@theme inline {
+     7→  --color-background: var(--background);
+     8→  --color-foreground: var(--foreground);
+     9→  --font-sans: var(--font-sora);
+    10→  --font-mono: var(--font-space-mono);
+    11→  --color-sidebar-ring: var(--sidebar-ring);
+    12→  --color-sidebar-border: var(--sidebar-border);
+    13→  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    14→  --color-sidebar-accent: var(--sidebar-accent);
+    15→  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    16→  --color-sidebar-primary: var(--sidebar-primary);
+    17→  --color-sidebar-foreground: var(--sidebar-foreground);
+    18→  --color-sidebar: var(--sidebar);
+    19→  --color-chart-5: var(--chart-5);
+    20→  --color-chart-4: var(--chart-4);
+    21→  --color-chart-3: var(--chart-3);
+    22→  --color-chart-2: var(--chart-2);
+    23→  --color-chart-1: var(--chart-1);
+    24→  --color-ring: var(--ring);
+    25→  --color-input: var(--input);
+    26→  --color-border: var(--border);
+    27→  --color-destructive: var(--destructive);
+    28→  --color-accent-foreground: var(--accent-foreground);
+    29→  --color-accent: var(--accent);
+    30→  --color-muted-foreground: var(--muted-foreground);
+    31→  --color-muted: var(--muted);
+    32→  --color-secondary-foreground: var(--secondary-foreground);
+    33→  --color-secondary: var(--secondary);
+    34→  --color-primary-foreground: var(--primary-foreground);
+    35→  --color-primary: var(--primary);
+    36→  --color-popover-foreground: var(--popover-foreground);
+    37→  --color-popover: var(--popover);
+    38→  --color-card-foreground: var(--card-foreground);
+    39→  --color-card: var(--card);
+    40→  --color-paper: var(--paper);
+    41→  --color-paper-foreground: var(--paper-foreground);
+    42→  --color-paper-muted: var(--paper-muted);
+    43→  --color-ink: var(--ink);
+    44→  --color-flap: var(--flap);
+    45→  --color-flap-foreground: var(--flap-foreground);
+    46→  --color-signal: var(--signal);
+    47→  --color-safe: var(--safe);
+    48→  --color-danger: var(--destructive);
+    49→  --radius-sm: calc(var(--radius) - 4px);
+    50→  --radius-md: calc(var(--radius) - 2px);
+    51→  --radius-lg: var(--radius);
+    52→  --radius-xl: calc(var(--radius) + 4px);
+    53→}
+    54→
+    55→/* ============================================
+    56→   NIGHT TERMINAL — LAYOVER design tokens
+    57→   near-black terminal · departure-board amber · paper passes
+    58→   ============================================ */
+    59→:root {
+    60→  --radius: 0.75rem;
+    61→
+    62→  --background: #0b0b0d;
+    63→  --foreground: #f2eee3;
+    64→
+    65→  --card: #141416;
+    66→  --card-foreground: #f2eee3;
+    67→  --popover: #17171a;
+    68→  --popover-foreground: #f2eee3;
+    69→
+    70→  --primary: #f5a623;
+    71→  --primary-foreground: #1a1206;
+    72→
+    73→  --secondary: #1e1d20;
+    74→  --secondary-foreground: #f2eee3;
+    75→
+    76→  --muted: #1a191c;
+    77→  --muted-foreground: #94907f;
+    78→
+    79→  --accent: #26231d;
+    80→  --accent-foreground: #f5a623;
+    81→
+    82→  --destructive: #e5484d;
+    83→  --border: rgba(242, 238, 227, 0.14);
+    84→  --input: rgba(242, 238, 227, 0.18);
+    85→  --ring: rgba(245, 166, 35, 0.55);
+    86→
+    87→  --paper: #f4efe4;
+    88→  --paper-foreground: #17150f;
+    89→  --paper-muted: #6f6a5c;
+    90→
+    91→  --ink: #17150f;
+    92→  --flap: #17181c;
+    93→  --flap-foreground: #f5a623;
+    94→  --signal: #3fa66a;
+    95→  --safe: #3fa66a;
+    96→
+    97→  --chart-1: #f5a623;
+    98→  --chart-2: #3fa66a;
+    99→  --chart-3: #c2452d;
+   100→  --chart-4: #e8d9b0;
+   101→  --chart-5: #8e8a7e;
+   102→
+   103→  --sidebar: #141416;
+   104→  --sidebar-foreground: #f2eee3;
+   105→  --sidebar-primary: #f5a623;
+   106→  --sidebar-primary-foreground: #1a1206;
+   107→  --sidebar-accent: #26231d;
+   108→  --sidebar-accent-foreground: #f5a623;
+   109→  --sidebar-border: rgba(242, 238, 227, 0.14);
+   110→  --sidebar-ring: rgba(245, 166, 35, 0.55);
+   111→}
+   112→
+   113→@layer base {
+   114→  * {
+   115→    @apply border-border outline-ring/50;
+   116→  }
+   117→  html {
+   118→    scroll-behavior: smooth;
+   119→  }
+   120→  body {
+   121→    @apply bg-background text-foreground;
+   122→    background-image: radial-gradient(
+   123→        ellipse 80% 50% at 50% -10%,
+   124→        rgba(245, 166, 35, 0.07),
+   125→        transparent
+   126→      ),
+   127→      radial-gradient(
+   128→        ellipse 60% 40% at 90% 110%,
+   129→        rgba(63, 166, 106, 0.04),
+   130→        transparent
+   131→      );
+   132→    background-attachment: fixed;
+   133→  }
+   134→  ::selection {
+   135→    background: rgba(245, 166, 35, 0.35);
+   136→  }
+   137→}
+   138→
+   139→/* ---------- custom scrollbar ---------- */
+   140→::-webkit-scrollbar {
+   141→  width: 10px;
+   142→  height: 10px;
+   143→}
+   144→::-webkit-scrollbar-track {
+   145→  background: #0b0b0d;
+   146→}
+   147→::-webkit-scrollbar-thumb {
+   148→  background: #2a2820;
+   149→  border-radius: 8px;
+   150→  border: 2px solid #0b0b0d;
+   151→}
+   152→::-webkit-scrollbar-thumb:hover {
+   153→  background: #3d3a2e;
+   154→}
+   155→
+   156→/* ============================================
+   157→   BOARDING PASS paper mechanics
+   158→   ============================================ */
+   159→
+   160→/* perforated tear line — vertical, between pass body and stub */
+   161→.perforation-v {
+   162→  background-image: radial-gradient(
+   163→    circle at 50% 50%,
+   164→    var(--background) 5px,
+   165→    transparent 5.5px
+   166→  );
+   167→  background-size: 12px 14px;
+   168→  background-position: center;
+   169→  background-repeat: repeat-y;
+   170→}
+   171→
+   172→/* perforated tear line — horizontal (mobile stub separator) */
+   173→.perforation-h {
+   174→  background-image: radial-gradient(
+   175→    circle at 50% 50%,
+   176→    var(--background) 5px,
+   177→    transparent 5.5px
+   178→  );
+   179→  background-size: 14px 12px;
+   180→  background-repeat: repeat-x;
+   181→  background-position: center;
+   182→}
+   183→
+   184→/* punch notches top & bottom of the perforation */
+   185→.notch {
+   186→  position: absolute;
+   187→  width: 22px;
+   188→  height: 22px;
+   189→  border-radius: 9999px;
+   190→  background: var(--background);
+   191→}
+   192→
+   193→/* CSS barcode */
+   194→.barcode {
+   195→  background-image: repeating-linear-gradient(
+   196→    90deg,
+   197→    var(--ink) 0px,
+   198→    var(--ink) 2px,
+   199→    transparent 2px,
+   200→    transparent 4px,
+   201→    var(--ink) 4px,
+   202→    var(--ink) 5px,
+   203→    transparent 5px,
+   204→    transparent 9px,
+   205→    var(--ink) 9px,
+   206→    var(--ink) 12px,
+   207→    transparent 12px,
+   208→    transparent 14px
+   209→  );
+   210→}
+   211→
+   212→/* fake QR — css grid blocks */
+   213→.qr-blocks {
+   214→  background-image: repeating-conic-gradient(
+   215→    var(--ink) 0% 25%,
+   216→    transparent 0% 50%
+   217→  );
+   218→  background-size: 8px 8px;
+   219→}
+   220→
+   221→/* ============================================
+   222→   SPLIT-FLAP departure board
+   223→   ============================================ */
+   224→.flap-cell {
+   225→  position: relative;
+   226→  display: inline-flex;
+   227→  align-items: center;
+   228→  justify-content: center;
+   229→  background: linear-gradient(180deg, #212329 0%, #17181c 46%, #0f1013 100%);
+   230→  color: var(--flap-foreground);
+   231→  border-radius: 3px;
+   232→  box-shadow:
+   233→    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+   234→    inset 0 -1px 0 rgba(0, 0, 0, 0.65),
+   235→    0 2px 3px rgba(0, 0, 0, 0.5);
+   236→  perspective: 300px;
+   237→}
+   238→
+   239→.flap-cell::after {
+   240→  /* hinge line */
+   241→  content: "";
+   242→  position: absolute;
+   243→  left: 0;
+   244→  right: 0;
+   245→  top: 50%;
+   246→  height: 1px;
+   247→  background: rgba(0, 0, 0, 0.75);
+   248→  pointer-events: none;
+   249→}
+   250→
+   251→.flap-cell.flipping .flap-face {
+   252→  animation: flap-flip 0.12s ease-in;
+   253→}
+   254→
+   255→.flap-face {
+   256→  will-change: transform;
+   257→}
+   258→
+   259→@keyframes flap-flip {
+   260→  0% {
+   261→    transform: rotateX(0deg);
+   262→  }
+   263→  49.9% {
+   264→    transform: rotateX(90deg);
+   265→    filter: brightness(1.6);
+   266→  }
+   267→  50% {
+   268→    transform: rotateX(-90deg);
+   269→    filter: brightness(1.6);
+   270→  }
+   271→  100% {
+   272→    transform: rotateX(0deg);
+   273→  }
+   274→}
+   275→
+   276→/* scanlines overlay for board glow */
+   277→.scanlines {
+   278→  background-image: repeating-linear-gradient(
+   279→    0deg,
+   280→    rgba(0, 0, 0, 0.22) 0px,
+   281→    rgba(0, 0, 0, 0.22) 1px,
+   282→    transparent 1px,
+   283→    transparent 3px
+   284→  );
+   285→}
+   286→
+   287→.board-glow {
+   288→  text-shadow:
+   289→    0 0 6px rgba(245, 166, 35, 0.45),
+   290→    0 0 18px rgba(245, 166, 35, 0.18);
+   291→}
+   292→
+   293→/* ============================================
+   294→   STAMP slam
+   295→   ============================================ */
+   296→.stamp-slam {
+   297→  animation: stamp-slam 0.45s cubic-bezier(0.19, 1.3, 0.42, 1) both;
+   298→}
+   299→
+   300→@keyframes stamp-slam {
+   301→  0% {
+   302→    transform: scale(2.6) rotate(calc(var(--stamp-rot, -8deg) - 18deg));
+   303→    opacity: 0;
+   304→    filter: blur(2px);
+   305→  }
+   306→  60% {
+   307→    opacity: 1;
+   308→    filter: blur(0);
+   309→  }
+   310→  100% {
+   311→    transform: scale(1) rotate(var(--stamp-rot, -8deg));
+   312→    opacity: 1;
+   313→  }
+   314→}
+   315→
+   316→.ghost-stamp {
+   317→  opacity: 0.16;
+   318→  filter: grayscale(1);
+   319→}
+   320→
+   321→/* ============================================
+   322→   ticket entrance + misc animations
+   323→   ============================================ */
+   324→.pass-enter {
+   325→  animation: pass-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+   326→}
+   327→
+   328→@keyframes pass-enter {
+   329→  0% {
+   330→    transform: translateY(46px) rotate(-1.6deg) scale(0.97);
+   331→    opacity: 0;
+   332→  }
+   333→  100% {
+   334→    transform: translateY(0) rotate(0deg) scale(1);
+   335→    opacity: 1;
+   336→  }
+   337→}
+   338→
+   339→.ticker {
+   340→  animation: ticker 26s linear infinite;
+   341→}
+   342→
+   343→@keyframes ticker {
+   344→  from {
+   345→    transform: translateX(0);
+   346→  }
+   347→  to {
+   348→    transform: translateX(-50%);
+   349→  }
+   350→}
+   351→
+   352→.blink-slow {
+   353→  animation: blink-slow 1.4s steps(2, start) infinite;
+   354→}
+   355→
+   356→@keyframes blink-slow {
+   357→  to {
+   358→    visibility: hidden;
+   359→  }
+   360→}
+   361→
+   362→/* radar sweep for generation state */
+   363→.radar-dot {
+   364→  animation: radar 1.6s ease-in-out infinite;
+   365→}
+   366→
+   367→@keyframes radar {
+   368→  0%,
+   369→  100% {
+   370→    opacity: 0.25;
+   371→  }
+   372→  50% {
+   373→    opacity: 1;
+   374→  }
+   375→}
+   376→
+   377→/* safe area for sticky footer on iOS */
+   378→.safe-bottom {
+   379→  padding-bottom: env(safe-area-inset-bottom, 0px);
+   380→}
+   381→
+   382→/* ============================================
+   383→   WHEELS DIVISION — highway signage skin
+   384→   Scoped under [data-mode="road"] on the page root.
+   385→   WINGS (default tokens above) is untouched.
+   386→   ============================================ */
+   387→
+   388→/* whole-page theme crossfade when flipping WINGS ⇄ WHEELS */
+   389→.theme-fade {
+   390→  transition: background-color 0.6s ease, color 0.6s ease;
+   391→}
+   392→
+   393→[data-mode="road"] {
+   394→  --background: #0c100c; /* bitumen black-green */
+   395→  --card: #101710;
+   396→  --popover: #131b13;
+   397→  --primary: #f5c518; /* hazard yellow */
+   398→  --primary-foreground: #17150f;
+   399→  --accent: #16251a;
+   400→  --accent-foreground: #f5c518;
+   401→  --muted: #141b14;
+   402→  --ring: rgba(245, 197, 24, 0.55);
+   403→  --flap-foreground: #f5c518;
+   404→  --signal: #5fbf85;
+   405→  --safe: #5fbf85;
+   406→}
+   407→
+   408→[data-mode="road"] body,
+   409→[data-mode="road"] {
+   410→  background-image:
+   411→    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(95, 191, 133, 0.08), transparent),
+   412→    radial-gradient(ellipse 60% 40% at 90% 110%, rgba(245, 197, 24, 0.05), transparent);
+   413→}
+   414→
+   415→[data-mode="road"] ::selection {
+   416→  background: rgba(245, 197, 24, 0.35);
+   417→}
+   418→
+   419→/* green guide-sign face with the classic white inset border */
+   420→.sign-panel {
+   421→  background: linear-gradient(180deg, #107d42 0%, #0c6d38 100%);
+   422→  box-shadow:
+   423→    inset 0 0 0 2px rgba(255, 255, 255, 0.95),
+   424→    inset 0 0 0 7px rgba(16, 125, 66, 1),
+   425→    inset 0 0 0 8.5px rgba(255, 255, 255, 0.35),
+   426→    0 24px 60px -28px rgba(0, 0, 0, 0.85);
+   427→}
+   428→
+   429→/* smaller exit-style sign */
+   430→.sign-panel-sm {
+   431→  background: linear-gradient(180deg, #107d42 0%, #0c6d38 100%);
+   432→  box-shadow:
+   433→    inset 0 0 0 1.5px rgba(255, 255, 255, 0.9),
+   434→    inset 0 0 0 5px rgba(16, 125, 66, 1),
+   435→    inset 0 0 0 6.5px rgba(255, 255, 255, 0.3);
+   436→}
+   437→
+   438→/* hazard warning stripe strip */
+   439→.hazard-stripes {
+   440→  background-image: repeating-linear-gradient(
+   441→    -45deg,
+   442→    #f5c518 0 12px,
+   443→    #17150f 12px 24px
+   444→  );
+   445→}
+   446→
+   447→/* dashed highway center line divider */
+   448→.road-lane {
+   449→  height: 3px;
+   450→  background-image: repeating-linear-gradient(
+   451→    90deg,
+   452→    rgba(242, 238, 227, 0.55) 0 26px,
+   453→    transparent 26px 46px
+   454→  );
+   455→}
+   456→
+   457→/* road-mode glow for headings */
+   458→.board-glow-road {
+   459→  text-shadow:
+   460→    0 0 6px rgba(95, 191, 133, 0.5),
+   461→    0 0 18px rgba(95, 191, 133, 0.2);
+   462→}
+   463→
+   464→/* semantic amber glows — WINGS default; every amber box-shadow in the UI
+   465→   should use these classes so [data-mode="road"] can re-tint them in one place */
+   466→.glow-amber {
+   467→  box-shadow: 0 0 20px -4px rgba(245, 166, 35, 0.7);
+   468→}
+   469→
+   470→.glow-strong {
+   471→  box-shadow: 0 0 30px -8px rgba(245, 166, 35, 0.8);
+   472→}
+   473→
+   474→/* ============================================
+   475→   WHEELS GLOW ENGINE — in road mode, EVERY amber
+   476→   glow in the UI auto-flips to the highway palette:
+   477→   text glows → green sign glow, box glows → hazard
+   478→   yellow + green halo. No component edits needed.
+   479→   ============================================ */
+   480→[data-mode="road"] .board-glow {
+   481→  text-shadow:
+   482→    0 0 6px rgba(95, 191, 133, 0.5),
+   483→    0 0 18px rgba(95, 191, 133, 0.2);
+   484→}
+   485→
+   486→[data-mode="road"] .glow-amber {
+   487→  box-shadow:
+   488→    0 0 20px -4px rgba(245, 197, 24, 0.55),
+   489→    0 0 44px -10px rgba(95, 191, 133, 0.4);
+   490→}
+   491→
+   492→[data-mode="road"] .glow-strong {
+   493→  box-shadow:
+   494→    0 0 30px -8px rgba(245, 197, 24, 0.6),
+   495→    0 0 60px -14px rgba(95, 191, 133, 0.45);
+   496→}
+   497→
+   498→/* conductor punch pop (ticket stage completed) */
+   499→.punch-pop {
+   500→  animation: punch-pop 0.4s cubic-bezier(0.19, 1.3, 0.42, 1) both;
+   501→}
+   502→
+   503→@keyframes punch-pop {
+   504→  0% {
+   505→    transform: scale(1.8) rotate(10deg);
+   506→  }
+   507→  100% {
+   508→    transform: scale(1) rotate(0deg);
+   509→  }
+   510→}
+   511→
+   512→/* bus ticket entrance — torn from the conductor's pad */
+   513→.ticket-enter {
+   514→  animation: ticket-enter 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+   515→}
+   516→
+   517→@keyframes ticket-enter {
+   518→  0% {
+   519→    transform: translateY(60px) rotate(2.5deg) scale(0.96);
+   520→    opacity: 0;
+   521→  }
+   522→  60% {
+   523→    filter: brightness(1.06);
+   524→  }
+   525→  100% {
+   526→    transform: translateY(0) rotate(0deg) scale(1);
+   527→    opacity: 1;
+   528→  }
+   529→}
+   530→
+   531→/* boarding pass exit — filed away when the world flips */
+   532→.pass-exit {
+   533→  animation: pass-exit 0.45s ease-in both;
+   534→}
+   535→
+   536→@keyframes pass-exit {
+   537→  0% {
+   538→    transform: translateY(0) rotate(0deg);
+   539→    opacity: 1;
+   540→  }
+   541→  100% {
+   542→    transform: translateY(-46px) rotate(-3deg) scale(0.96);
+   543→    opacity: 0;
+   544→  }
+   545→}
+   546→
+   547→/* wheels rescan touch */
+   548→
+   549→/* ============================================
+   550→   v4 — WHEELS AS A SECOND WORLD
+   551→   The hero board is a different MACHINE per world:
+   552→   air  → mechanical split-flap solari (DepartureBoard)
+   553→   road → red LED dot-matrix gantry sign (LedAdvisory)
+   554→   No shared skin — road mode never renders a flap.
+   555→   The world swap is choreographed at the bottom of
+   556→   this file: wheel roll / plane flythrough + a
+   557→   full-page color crossfade.
+   558→   ============================================ */
+   559→
+   560→/* -- hazard edge stripes on the chrome (header/footer) -- */
+   561→[data-mode="road"] header::after {
+   562→  content: "";
+   563→  position: absolute;
+   564→  left: 0;
+   565→  right: 0;
+   566→  bottom: -4px;
+   567→  height: 4px;
+   568→  background-image: repeating-linear-gradient(
+   569→    -45deg,
+   570→    #f5c518 0 10px,
+   571→    #17150f 10px 20px
+   572→  );
+   573→}
+   574→
+   575→[data-mode="road"] footer::before {
+   576→  content: "";
+   577→  position: absolute;
+   578→  top: -3px;
+   579→  left: 0;
+   580→  right: 0;
+   581→  height: 3px;
+   582→  background-image: repeating-linear-gradient(
+   583→    -45deg,
+   584→    #f5c518 0 10px,
+   585→    #17150f 10px 20px
+   586→  );
+   587→}
+   588→
+   589→/* ============================================
+   590→   HIGHWAY LED ADVISORY — red dot-matrix VMS
+   591→   The WHEELS hero board: a black electronics
+   592→   cabinet with an unlit pixel grid, glowing red
+   593→   advisories and marching chevrons. Zero airport.
+   594→   ============================================ */
+   595→
+   596→/* metal cabinet bezel */
+   597→.led-frame {
+   598→  border: 1px solid #0b0c0a;
+   599→  border-radius: 16px;
+   600→  padding: clamp(8px, 1.5vw, 14px);
+   601→  background: linear-gradient(180deg, #3a3c34 0%, #262822 40%, #191b16 100%);
+   602→  box-shadow:
+   603→    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+   604→    inset 0 -2px 6px rgba(0, 0, 0, 0.6),
+   605→    0 24px 60px -24px rgba(0, 0, 0, 0.9);
+   606→}
+   607→
+   608→.led-bolt {
+   609→  position: absolute;
+   610→  z-index: 20;
+   611→  width: 7px;
+   612→  height: 7px;
+   613→  border-radius: 9999px;
+   614→  background: radial-gradient(circle at 35% 30%, #6a6d5e, #2c2e26 70%);
+   615→  box-shadow:
+   616→    inset 0 1px 1px rgba(255, 255, 255, 0.25),
+   617→    0 1px 2px rgba(0, 0, 0, 0.8);
+   618→}
+   619→
+   620→/* the black LED face */
+   621→.led-surface {
+   622→  position: relative;
+   623→  overflow: hidden;
+   624→  border-radius: 8px;
+   625→  background: #070807;
+   626→  box-shadow:
+   627→    inset 0 0 24px rgba(0, 0, 0, 0.9),
+   628→    inset 0 0 60px rgba(120, 10, 5, 0.12);
+   629→}
+   630→
+   631→/* unlit LED pixel grid behind every lit dot */
+   632→.led-surface::before {
+   633→  content: "";
+   634→  position: absolute;
+   635→  inset: 0;
+   636→  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1.4px);
+   637→  background-size: 7px 7px;
+   638→  pointer-events: none;
+   639→}
+   640→
+   641→/* glass sheen + edge vignette */
+   642→.led-surface::after {
+   643→  content: "";
+   644→  position: absolute;
+   645→  inset: 0;
+   646→  background:
+   647→    linear-gradient(105deg, rgba(255, 255, 255, 0.045) 0%, transparent 30%),
+   648→    radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+   649→  pointer-events: none;
+   650→}
+   651→
+   652→/* the red LED glow itself */
+   653→.led-text {
+   654→  color: #ff3b30;
+   655→  text-shadow:
+   656→    0 0 3px rgba(255, 94, 71, 0.95),
+   657→    0 0 10px rgba(255, 59, 48, 0.65),
+   658→    0 0 28px rgba(255, 40, 20, 0.35);
+   659→}
+   660→
+   661→.led-dim {
+   662→  color: #e0554a;
+   663→  opacity: 0.85;
+   664→  text-shadow: 0 0 6px rgba(255, 59, 48, 0.5);
+   665→}
+   666→
+   667→.led-dot {
+   668→  width: 7px;
+   669→  height: 7px;
+   670→  border-radius: 9999px;
+   671→  background: #ff3b30;
+   672→  box-shadow:
+   673→    0 0 8px rgba(255, 59, 48, 0.9),
+   674→    0 0 16px rgba(255, 40, 20, 0.5);
+   675→}
+   676→
+   677→.led-blink {
+   678→  animation: led-blink 1.4s steps(1, end) infinite;
+   679→}
+   680→
+   681→@keyframes led-blink {
+   682→  0%,
+   683→  70% {
+   684→    opacity: 1;
+   685→  }
+   686→  71%,
+   687→  100% {
+   688→    opacity: 0.25;
+   689→  }
+   690→}
+   691→
+   692→/* LEDs powering on when a new advisory is posted */
+   693→.led-relight {
+   694→  animation: led-relight 0.42s steps(3, end) both;
+   695→}
+   696→
+   697→@keyframes led-relight {
+   698→  0% {
+   699→    opacity: 0.12;
+   700→  }
+   701→  30% {
+   702→    opacity: 0.9;
+   703→  }
+   704→  45% {
+   705→    opacity: 0.3;
+   706→  }
+   707→  60% {
+   708→    opacity: 1;
+   709→  }
+   710→  75% {
+   711→    opacity: 0.75;
+   712→  }
+   713→  100% {
+   714→    opacity: 1;
+   715→  }
+   716→}
+   717→
+   718→/* marching chevrons — the universal "this way" of highways */
+   719→.led-march {
+   720→  animation: led-march 1.05s ease-in-out infinite;
+   721→}
+   722→
+   723→@keyframes led-march {
+   724→  0%,
+   725→  100% {
+   726→    opacity: 0.22;
+   727→  }
+   728→  30% {
+   729→    opacity: 1;
+   730→  }
+   731→}
+   732→
+   733→/* barely-perceptible LED refresh flicker across the whole panel */
+   734→.led-flicker {
+   735→  animation: led-flicker 5.5s linear infinite;
+   736→}
+   737→
+   738→@keyframes led-flicker {
+   739→  0%,
+   740→  100% {
+   741→    opacity: 1;
+   742→  }
+   743→  3% {
+   744→    opacity: 0.96;
+   745→  }
+   746→  4% {
+   747→    opacity: 1;
+   748→  }
+   749→  47% {
+   750→    opacity: 0.98;
+   751→  }
+   752→  48% {
+   753→    opacity: 1;
+   754→  }
+   755→  71% {
+   756→    opacity: 0.95;
+   757→  }
+   758→  72% {
+   759→    opacity: 1;
+   760→  }
+   761→}
+   762→
+   763→/* ============================================
+   764→   WORLD-SWAP CHOREOGRAPHY v2
+   765→   to-road → a wheel rolls across the screen,
+   766→             unrolling the WHEELS asphalt behind it.
+   767→   to-air  → a plane sweeps through on a climb,
+   768→             its contrail painting the amber night
+   769→             sky back over the page.
+   770→   data-mode flips mid-flight (page-owned timer)
+   771→   while .mode-morphing crossfades every color.
+   772→   ============================================ */
+   773→
+   774→/* while .mode-morphing is on the page root, EVERY color
+   775→   on the page crossfades between the two worlds */
+   776→.mode-morphing,
+   777→.mode-morphing * {
+   778→  transition-property: background-color, border-color, color, fill, stroke,
+   779→    box-shadow, text-shadow !important;
+   780→  transition-duration: 0.55s !important;
+   781→  transition-timing-function: ease !important;
+   782→}
+   783→
+   784→/* -- the new-world panel that wipes across behind the vehicle -- */
+   785→.world-wipe {
+   786→  position: absolute;
+   787→  top: 0;
+   788→  bottom: 0;
+   789→  left: 0;
+   790→  width: 100%;
+   791→  transform-origin: left center;
+   792→  transform: scaleX(0);
+   793→  animation: world-wipe 1.05s cubic-bezier(0.72, 0, 0.28, 1) both;
+   794→}
+   795→
+   796→@keyframes world-wipe {
+   797→  0% {
+   798→    transform: scaleX(0);
+   799→    opacity: 1;
+   800→  }
+   801→  80% {
+   802→    transform: scaleX(1);
+   803→    opacity: 1;
+   804→  }
+   805→  100% {
+   806→    transform: scaleX(1);
+   807→    opacity: 0;
+   808→  }
+   809→}
+   810→
+   811→/* WHEELS side: rolling asphalt — grit, hazard edges, lane dashes */
+   812→.world-wipe-road {
+   813→  background-image:
+   814→    radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1.4px),
+   815→    radial-gradient(ellipse 60% 45% at 50% 50%, rgba(95, 191, 133, 0.1), transparent 70%),
+   816→    linear-gradient(180deg, #101510 0%, #0b0f0b 55%, #0d120d 100%);
+   817→  background-size:
+   818→    9px 9px,
+   819→    100% 100%,
+   820→    100% 100%;
+   821→}
+   822→
+   823→.world-wipe-road::before,
+   824→.world-wipe-road::after {
+   825→  content: "";
+   826→  position: absolute;
+   827→  left: 0;
+   828→  right: 0;
+   829→  height: 10px;
+   830→  background-image: repeating-linear-gradient(
+   831→    -45deg,
+   832→    #f5c518 0 12px,
+   833→    #17150f 12px 24px
+   834→  );
+   835→  opacity: 0.92;
+   836→}
+   837→
+   838→.world-wipe-road::before {
+   839→  top: 0;
+   840→}
+   841→
+   842→.world-wipe-road::after {
+   843→  bottom: 0;
+   844→}
+   845→
+   846→.road-centerline {
+   847→  position: absolute;
+   848→  left: 0;
+   849→  right: 0;
+   850→  top: calc(50% - 3px);
+   851→  height: 6px;
+   852→  background-image: repeating-linear-gradient(
+   853→    90deg,
+   854→    rgba(245, 197, 24, 0.85) 0 52px,
+   855→    transparent 52px 104px
+   856→  );
+   857→  opacity: 0.8;
+   858→}
+   859→
+   860→/* WINGS side: amber night sky — the jet comes in from the WEST, so the sky
+   861→   is unrolled from the RIGHT edge (transform-origin right) and its leading
+   862→   beam sits on the panel's left edge, where the nose breaks through first */
+   863→.world-wipe-air {
+   864→  transform-origin: right center;
+   865→  background:
+   866→    radial-gradient(ellipse 70% 55% at 30% 40%, rgba(245, 166, 35, 0.14), transparent 70%),
+   867→    linear-gradient(180deg, #191307 0%, #100c05 60%, #0e0a04 100%);
+   868→}
+   869→
+   870→.world-wipe-air::before {
+   871→  content: "";
+   872→  position: absolute;
+   873→  inset: 0;
+   874→  background-image: radial-gradient(circle, rgba(255, 214, 140, 0.35) 1px, transparent 1.4px);
+   875→  background-size: 90px 70px;
+   876→  opacity: 0.5;
+   877→}
+   878→
+   879→.world-wipe-air::after {
+   880→  content: "";
+   881→  position: absolute;
+   882→  top: 0;
+   883→  bottom: 0;
+   884→  left: 0;
+   885→  width: 22%;
+   886→  background: linear-gradient(90deg, rgba(245, 166, 35, 0.28), transparent);
+   887→}
+   888→
+   889→/* -- the rolling wheel -- */
+   890→.world-wheel {
+   891→  --wheel: clamp(96px, 14vw, 176px);
+   892→  position: absolute;
+   893→  left: 0;
+   894→  top: 50%;
+   895→  width: var(--wheel);
+   896→  height: var(--wheel);
+   897→  margin-top: calc(var(--wheel) / -2);
+   898→  animation: wheel-roll 1.05s cubic-bezier(0.72, 0, 0.28, 1) both;
+   899→}
+   900→
+   901→@keyframes wheel-roll {
+   902→  0% {
+   903→    transform: translateX(calc(-1.2 * var(--wheel)));
+   904→  }
+   905→  100% {
+   906→    transform: translateX(103vw);
+   907→  }
+   908→}
+   909→
+   910→/* spin lives on an inner layer so roll + rotate never fight */
+   911→.wheel-spin {
+   912→  position: absolute;
+   913→  inset: 0;
+   914→  border-radius: 9999px;
+   915→  animation: wheel-spin 1.05s linear both;
+   916→}
+   917→
+   918→@keyframes wheel-spin {
+   919→  from {
+   920→    transform: rotate(0deg);
+   921→  }
+   922→  to {
+   923→    transform: rotate(1080deg);
+   924→  }
+   925→}
+   926→
+   927→/* tread blocks around the circumference */
+   928→.wheel-tire {
+   929→  position: absolute;
+   930→  inset: 0;
+   931→  border-radius: 9999px;
+   932→  background: repeating-conic-gradient(
+   933→    from 3deg,
+   934→    #1d241d 0deg 5deg,
+   935→    #0a0d0a 5deg 11deg
+   936→  );
+   937→  box-shadow:
+   938→    inset 0 0 0 4px rgba(5, 7, 5, 0.9),
+   939→    inset 0 0 18px rgba(0, 0, 0, 0.8),
+   940→    0 14px 34px rgba(0, 0, 0, 0.65);
+   941→}
+   942→
+   943→/* hazard-yellow spokes — the rotation you actually read */
+   944→.wheel-rim {
+   945→  position: absolute;
+   946→  inset: 17%;
+   947→  border-radius: 9999px;
+   948→  background:
+   949→    radial-gradient(circle, #f5c518 0 16%, #b9941a 16% 24%, transparent 25%),
+   950→    repeating-conic-gradient(from 0deg, #e8c243 0deg 14deg, #4a3f14 14deg 45deg);
+   951→  box-shadow:
+   952→    inset 0 0 0 3px rgba(10, 10, 6, 0.7),
+   953→    0 0 22px rgba(245, 197, 24, 0.28);
+   954→}
+   955→
+   956→.wheel-hub {
+   957→  position: absolute;
+   958→  inset: 40%;
+   959→  border-radius: 9999px;
+   960→  background: radial-gradient(circle at 35% 30%, #ffe27a, #b98f14 75%);
+   961→  box-shadow:
+   962→    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+   963→    0 0 10px rgba(245, 197, 24, 0.5);
+   964→}
+   965→
+   966→.wheel-shadow {
+   967→  position: absolute;
+   968→  left: 6%;
+   969→  right: 6%;
+   970→  bottom: -16%;
+   971→  height: 18%;
+   972→  border-radius: 9999px;
+   973→  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.6), transparent 70%);
+   974→  filter: blur(3px);
+   975→}
+   976→
+   977→/* -- the full-screen jet, flying RIGHT → LEFT --
+   978→   the drawn silhouette is ~1.5× the viewport wide, so the airframe
+   979→   itself fills the screen as it crosses; the amber sky wipe follows
+   980→   in from the right edge behind it */
+   981→.world-plane {
+   982→  --plane: clamp(480px, 150vmax, 2200px);
+   983→  position: absolute;
+   984→  left: 0;
+   985→  top: 0;
+   986→  width: 0;
+   987→  height: 0;
+   988→  z-index: 2;
+   989→  animation: plane-fly 1.15s cubic-bezier(0.55, 0.06, 0.32, 1) both;
+   990→}
+   991→
+   992→@keyframes plane-fly {
+   993→  0% {
+   994→    transform: translate(calc(50vw + var(--plane) / 2 + 3vw), 60vh);
+   995→    opacity: 0;
+   996→  }
+   997→  7% {
+   998→    opacity: 1;
+   999→  }
+  1000→  100% {
+  1001→    transform: translate(calc(-1 * (var(--plane) / 2 + 3vw)), 40vh);
+  1002→    opacity: 1;
+  1003→  }
+  1004→}
+  1005→
+  1006→/* soft engine glow behind the metal — a plain radial is far cheaper than
+  1007→   animating a drop-shadow filter on a glyph this size */
+  1008→.plane-glow {
+  1009→  position: absolute;
+  1010→  width: var(--plane);
+  1011→  height: var(--plane);
+  1012→  transform: translate(-50%, -50%);
+  1013→  border-radius: 9999px;
+  1014→  background: radial-gradient(circle, rgba(245, 166, 35, 0.2), transparent 62%);
+  1015→}
+  1016→
+  1017→/* side-view silhouette, nose west, slight nose-up climb attitude */
+  1018→.plane-glyph {
+  1019→  position: absolute;
+  1020→  width: var(--plane);
+  1021→  height: var(--plane);
+  1022→  transform: translate(-50%, -50%) rotate(-6deg);
+  1023→}
+  1024→
+  1025→/* twin contrails streaming off the engine exhausts — the jet heads west,
+  1026→   so the smoke trails EAST (rightward) and fades with distance */
+  1027→.plane-contrail {
+  1028→  position: absolute;
+  1029→  left: calc(var(--plane) * 0.28);
+  1030→  top: 17vh;
+  1031→  width: 56vw;
+  1032→  height: 3px;
+  1033→  border-radius: 9999px;
+  1034→  background: linear-gradient(90deg, rgba(245, 214, 140, 0.75), transparent);
+  1035→}
+  1036→
+  1037→.plane-contrail::after {
+  1038→  content: "";
+  1039→  position: absolute;
+  1040→  top: 4vh;
+  1041→  left: -2%;
+  1042→  width: 92%;
+  1043→  height: 2.5px;
+  1044→  border-radius: 9999px;
+  1045→  background: linear-gradient(90deg, rgba(245, 214, 140, 0.45), transparent);
+  1046→}
+  1047→
+  1048→/* division tag riding near the bottom of the screen */
+  1049→.world-tag {
+  1050→  position: absolute;
+  1051→  left: 50%;
+  1052→  bottom: clamp(64px, 12vh, 130px);
+  1053→  transform: translateX(-50%);
+  1054→  display: inline-flex;
+  1055→  align-items: center;
+  1056→  gap: 0.5rem;
+  1057→  padding: 0.6rem 1.1rem;
+  1058→  border-radius: 9999px;
+  1059→  font-size: 11px;
+  1060→  font-weight: 700;
+  1061→  letter-spacing: 0.28em;
+  1062→  white-space: nowrap;
+  1063→  backdrop-filter: blur(6px);
+  1064→  animation: world-tag 1.2s ease both;
+  1065→}
+  1066→
+  1067→.world-tag-road {
+  1068→  color: #7ee2a0;
+  1069→  border: 1px solid rgba(95, 191, 133, 0.45);
+  1070→  background: rgba(7, 12, 8, 0.88);
+  1071→  box-shadow:
+  1072→    0 0 24px rgba(95, 191, 133, 0.25),
+  1073→    0 12px 30px rgba(0, 0, 0, 0.5);
+  1074→}
+  1075→
+  1076→.world-tag-air {
+  1077→  color: #f5c518;
+  1078→  border: 1px solid rgba(245, 197, 24, 0.4);
+  1079→  background: rgba(14, 10, 4, 0.88);
+  1080→  box-shadow:
+  1081→    0 0 24px rgba(245, 166, 35, 0.3),
+  1082→    0 12px 30px rgba(0, 0, 0, 0.5);
+  1083→}
+  1084→
+  1085→@keyframes world-tag {
+  1086→  0% {
+  1087→    opacity: 0;
+  1088→    transform: translateX(-50%) translateY(14px) scale(0.94);
+  1089→  }
+  1090→  18%,
+  1091→  78% {
+  1092→    opacity: 1;
+  1093→    transform: translateX(-50%) translateY(0) scale(1);
+  1094→  }
+  1095→  100% {
+  1096→    opacity: 0;
+  1097→    transform: translateX(-50%) translateY(-8px) scale(1.03);
+  1098→  }
+  1099→}
+  1100→
+  1101→@media (prefers-reduced-motion: reduce) {
+  1102→  .world-wipe,
+  1103→  .world-wheel,
+  1104→  .wheel-spin,
+  1105→  .world-plane,
+  1106→  .world-tag,
+  1107→  .led-blink,
+  1108→  .led-march,
+  1109→  .led-flicker,
+  1110→  .led-relight {
+  1111→    animation: none !important;
+  1112→  }
+  1113→  .world-wipe,
+  1114→  .world-wheel,
+  1115→  .world-plane,
+  1116→  .world-tag {
+  1117→    opacity: 0 !important;
+  1118→  }
+  1119→  .mode-morphing,
+  1120→  .mode-morphing * {
+  1121→    transition: none !important;
+  1122→  }
+  1123→}
+  1124→
