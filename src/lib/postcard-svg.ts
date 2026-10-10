@@ -7,7 +7,9 @@
  * calls, zero rupees. Output is an SVG data URL the UI renders exactly like
  * an AI-pressed postcard (marked source:"showcase" upstream).
  *
- * Scenes are mode-aware, like the AI prompts:
+ * Scenes are mode-aware, like the AI prompts, and every card is STAMPED
+ * with the correct city name — a fallback postcard can be generic, but it
+ * can never be from the wrong city.
  *   air        → night terminal silhouette + jet climbing past the tower
  *   road/bus   → boxy inter-state bus winding up ghat hairpins
  *   road/train → passenger train crossing a backwater bridge
@@ -51,6 +53,7 @@ export function svgPostcard(
   mode: Mode,
   vehicle: Vehicle,
   vibe: string,
+  iata = "",
 ): string {
   const seed = hash(`${city.toLowerCase()}|${mode}|${vehicle}|${vibe}`);
   const p = PALETTES[seed % PALETTES.length];
@@ -88,6 +91,18 @@ export function svgPostcard(
 
   const frame = `
     <rect x="26" y="26" width="1292" height="716" rx="16" fill="none" stroke="${p.glow}" stroke-width="6" opacity="0.5"/>`;
+
+  // THE CITY STAMP — the fallback never borrows another city's identity:
+  // a generic scene, but printed with the RIGHT place name.
+  const stampCity = (city || iata || "LAYOVER").toUpperCase().slice(0, 30);
+  const stampChars = Math.max(stampCity.length, 8);
+  const stampW = Math.min(1160, 64 + stampChars * 30);
+  const stamp = `
+    <g>
+      <rect x="40" y="634" width="${stampW}" height="76" rx="10" fill="${p.ink}" opacity="0.85"/>
+      <rect x="40" y="634" width="${stampW}" height="76" rx="10" fill="none" stroke="${p.glow}" stroke-width="3" opacity="0.55"/>
+      <text x="74" y="684" font-family="Georgia, 'Times New Roman', serif" font-size="38" font-weight="bold" letter-spacing="7" fill="${p.glow}">GREETINGS FROM ${stampCity}</text>
+    </g>`;
 
   let scene = "";
 
@@ -171,6 +186,7 @@ export function svgPostcard(
     ${birdFlock}
     ${hills}
     ${scene}
+    ${stamp}
     ${frame}
   </svg>`;
 

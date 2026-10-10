@@ -25,6 +25,7 @@ export function BoardingPassCard({
   passTitle = "BOARDING PASS",
   passSubtitle = "LAYOVER TERMINAL",
   routeFrom = "BED",
+  scrubbed,
 }: {
   plan: Plan;
   done: Record<number, boolean>;
@@ -33,6 +34,8 @@ export function BoardingPassCard({
   passTitle?: string;
   passSubtitle?: string;
   routeFrom?: string;
+  /** USP-A — missions the demo clock scrubbed (window missed). Index-keyed. */
+  scrubbed?: Record<number, boolean>;
 }) {
   // deterministic pass id from plan content (SSR-safe, no effects)
   const passId = useMemo(() => {
@@ -175,7 +178,7 @@ export function BoardingPassCard({
             <p className="font-mono text-[10px] tracking-[0.3em] text-ink/50 mb-3">
               MISSION MANIFEST — {plan.missions.length} OBJECTIVES
             </p>
-            <MissionTimeline plan={plan} done={done} onToggle={onToggleMission} light />
+            <MissionTimeline plan={plan} done={done} onToggle={onToggleMission} light scrubbed={scrubbed} />
           </div>
         </div>
 

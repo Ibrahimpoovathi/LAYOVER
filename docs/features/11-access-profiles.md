@@ -77,3 +77,29 @@ ticket) `92` (final DPNA regression).
 | `.low-stim` present but things still blink | stale CSS chunk (hits repeatedly) | curl served CSS, grep `low-stim`; content-change + reload, else restart dev server clean |
 | LIVE MIC button missing | browser has no SpeechRecognition (non-Chromium) | expected — captions from ANNOUNCE still work |
 | Wall shows no SSR badge | trip saved before the feature (accessProfile `none`) | generate a fresh trip with a code |
+
+## v2 — LIVE MIC dual-engine + honest faults · 2026-10-10
+
+* User report: "speech to text in deaf section is not working properly."
+  Root cause: the strip relied only on browser SpeechRecognition, which
+  fails silently in sandboxed iframes (`service-not-allowed`), on Firefox/
+  Safari (missing), and on flaky networks (`network`) — "fails quiet"
+  meant judges saw nothing.
+* Fix 1 — ENGINE A kept but hardened: error codes mapped; `not-allowed` /
+  `network` / unknown faults hand off to engine B instead of dying.
+* Fix 2 — ENGINE B (new): MediaRecorder clips (~7 s) → base64 →
+  `POST /api/ai/transcribe` → `zai.audio.asr.create` → text appended to the
+  LED feed. Uses our own backend, so it works wherever the terminal works.
+* Fix 3 — the honest machine: every abnormal state prints ON the board
+  ("NO MICROPHONE FOUND ON THIS DEVICE", "MIC BLOCKED BY THE BROWSER — …",
+  "PA SIGNAL UNCLEAR — TRY SPEAKING CLOSER", "CAPTION CHANNEL DOWN — …").
+  No more silent failure.
+* Cost: transcribe is a CostKind — counted in the rolling hourly budget;
+  429 prints "CAPTION CHANNEL RESTING" instead of spending.
+* Pipeline proof (no mic needed): TTS a line via `/api/ai/announce`, base64
+  it, POST to `/api/ai/transcribe` → returns the line's text back.
+* Files: `led-caption-strip.tsx` (rewritten), `api/ai/transcribe/route.ts`
+  (new), `cost-guard.ts` (+`transcribe`).
+* Note: in the sandboxed preview iframe both mic engines may be blocked by
+  the platform — the LED will say so and point at "OPEN IN A NEW TAB".
+  Announcement captions never depended on the mic and always work.

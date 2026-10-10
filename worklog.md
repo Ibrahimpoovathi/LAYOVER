@@ -439,3 +439,65 @@ Stage Summary:
 - Design doctrine held: access features are printed artifacts and machine behavior (SSR codes on tickets, caption LED, still terminal), never a "settings page"
 - Ops: stale Turbopack chunks now hit BOTH css and api routes — verify served bytes (curl+grep) before debugging code; content-change flip first, clean restart second
 - Files: plan-schema.ts, schema.prisma, api/ai/plan, api/trips, api/ai/announce (type fix), access-picker.tsx, led-caption-strip.tsx, mission-timeline.tsx, boarding-pass-card.tsx, bus-ticket-card.tsx, page.tsx, globals.css, docs/features/11-access-profiles.md, docs/README.md, README.md, shots 84-92
+---
+Task ID: 15
+Agent: Z.ai Code (main)
+Task: ① Crew leaderboard with login (airport-level + overall, badges = stamps) · ② fix speech-to-text in the deaf section · ③ postcards must depict the actual airport/station/place (relatable fallback, never wrong-city blunders).
+
+Work Log:
+- Schema: Traveler.pinHash (sha256 of 4-digit crew PIN); db:push clean
+- NEW /api/auth/login: POST claim/login (new callsign → PIN claims; unclaimed → PIN claims; mismatch → 401), GET ?id= session restore; PIN hashed "layover-crew:"+pin; response derives trips+badges from DB
+- NEW /api/leaderboard: full read + in-memory rollup → overall (crew by badges, trips>0) + airports (badges+crew count per iata, mode/vehicle icons)
+- /api/trips: POST accepts travelerId (logged-in crew wins over nickname upsert); GET now serves traveler nickname → wall cards print "· CREW <NAME>"
+- NEW /api/ai/transcribe: base64 audio → zai.audio.asr.create → text; CostKind "transcribe" added to cost-guard (byKind + liveThisHour + roll reset)
+- LedCaptionStrip rewritten: ENGINE A browser SpeechRecognition with full error mapping (not-allowed/network/unknown → hand to B; no-speech/aborted → keep listening); ENGINE B MediaRecorder 7s clips → /api/ai/transcribe (mime pick webm/mp4/ogg, silence guard, segment chaining); every fault prints ON the LED ("NO MICROPHONE FOUND…", "MIC BLOCKED BY THE BROWSER…", "PA SIGNAL UNCLEAR…"); aria-live on the caption line
+- NEW src/lib/landmarks.ts: STOP_SCENES for every bundled airport + road stop; sceneForStop() falls back to city-anchored generic scenes that name NO landmark (generic safe, wrong-city not)
+- Postcard route: buildPrompt uses sceneForStop + "must depict <city>… do not borrow other cities' landmarks" guard; gallery key now includes iata; svgPostcard gains iata param + "GREETINGS FROM <CITY>" ink plate stamp
+- page.tsx makePostcard now sends iata (air → airport.iata, road → destination.code)
+- NEW crew-login.tsx (CrewChip + CREW GATE dialog, InputOTP 4-digit PIN, self-refreshing badge count on refreshKey); NEW leaderboard.tsx (two .board-shell machine boards, RankMark ✦ top-3, YOU highlight, 25s poll, max-h-80 scroll)
+- page.tsx: crew state + localStorage layover-crew session restore, boardTick refresh signal (login/save/stamp), BADGE EARNED toast with CATEGORY_META label, CREW LEADERBOARD section under the wall
+- Fixed my own mobile regression (CrewChip pushed header past 390px → PLAN MINE clipped): WifiOff icon hidden on mobile, header gaps tightened, logo subtitle hidden sm:block, PLAN MINE px-3 on mobile — 378/390px verified
+- VLM verification loop caught a REAL scene bug: my CCJ scene described Chinese fishing nets (iconic to KOCHI — the exact blunder class the user flagged). Corrected to Kozhikode banded lighthouse + stone pier + Beypore uru dhow; re-pressed + re-verified
+- HIT STALE MODULE STATE (6th incident, new variant): new cost-guard code ran against a globalThis state created by the old module → s.live.transcribe undefined → canSpend false + NaN→null in /api/cost. Clean restart (pkill + rm .next + restart) fixed; lesson recorded in doc 12 troubleshooting
+- Verified: lint clean; tsc src/ zero errors; ASR pipeline end-to-end (TTS wav → /api/ai/transcribe → accurate text back); auth edge cases via curl (wrong PIN 401, correct PIN ok, validation); browser E2E — login flow, badge toast, header 0✦→1✦, YOU row highlight, both boards live with real data (COK 14 / CCJ 13 / KBS 9…), wall callsigns, DEAF caption strip + honest mic fault + announcement captions, postcard gallery replay rendered Calicut scene, day-mode boards stay machine-dark, mobile 390 boards stack + header fits, road mode regression clean; dev.log + browser console zero errors; shots 93–98
+
+Stage Summary:
+- Gamification loop shipped: CREW GATE → trip → stamp → BADGE → both leaderboards move, with the judge's own row lamp-lit. ~40s from login to seeing your name climb.
+- Badges ARE the passport stamps the product already minted — gamification earned by the artifact, not bolted on.
+- Deaf section STT now works through two engines and never fails quiet: if the mic is blocked the board says exactly what's wrong and what still works (announcement captions).
+- Postcards are anchored to the real place: per-stop landmark scenes + anti-borrow guard + stamped SVG fallback; VLM-audited (and the audit fixed a genuine Kochi-for-Calicut mistake in my own registry).
+- Files: schema.prisma, api/auth/login (new), api/leaderboard (new), api/ai/transcribe (new), api/trips, api/ai/postcard, cost-guard, landmarks.ts (new), postcard-svg.ts, led-caption-strip.tsx, crew-login.tsx (new), leaderboard.tsx (new), page.tsx, docs/features/12 (new), docs 09 v5 + 11 v2, docs/README; shots 93–98
+---
+Task ID: 16
+Agent: Z.ai Code (main)
+Task: Leaderboard redesign per user clarification — "not a leaderboard FOR airports; PEOPLE categorized by airport/rail/bus + overall board is ok".
+
+Work Log:
+- Rewrote /api/leaderboard: response now { overall[], locations[] } — locations[] = per-stop boards, each with { code, city, mode, vehicle, badges, crewCount, crew: [{nickname, trips, badges}] } where crew[].badges = badges earned AT that stop (ranked people, stops never ranked); single full-read + in-memory rollup kept (hackathon scale)
+- Rewrote leaderboard.tsx right panel: "STOP LEADERBOARD — PEOPLE BY BADGES" with a role=tablist chip row (one chip per stop: mode icon ✈/🚌/🚆 + code + badge count, horizontally scrollable on mobile); selecting a chip ranks that stop's people; meta line shows city + crew count + badges here; YOU highlight on both boards; selection sticky across 25s polls
+- Added follow-the-crew behavior: on load + after every badge (refreshKey bump) the STOP board jumps to the stop where the logged-in crew holds the most badges (fresh login at a gate → board follows them there)
+- page.tsx section copy updated ("Crew ranked by badges — overall, and at every gate they've played"); docs/features/12 + docs/README row rewritten to the people-per-stop semantics
+- Verified E2E with agent-browser: API rollup correct (COK/CCJ/DXB air, KBS/VYT bus, ERS/CLT train with per-stop crew rankings); chip switching rewrites rows; logged-in CAPTAIN-CHAI auto-followed to CCJ then to DXB after stamping 2 demo missions (overall rank 02 · 3 badges; DXB board rank 01 · 2 HERE, YOU lamp-lit); shots 99-103 (light/dark/mobile, boards stack, footer sticky); zero console/page errors; lint clean
+
+Stage Summary:
+- Leaderboard now answers "who owns THIS gate tonight?" — people ranked per place they played (airport gate / railway station / bus stand) + overall crew champion; the judge's own row follows them around the hall
+- Files: api/leaderboard/route.ts, components/terminal/leaderboard.tsx, page.tsx (copy), docs/features/12, docs/README.md; shots 99-103
+---
+Task ID: 17
+Agent: Z.ai Code (main)
+Task: Implement USP-A "THE BOARD DEFENDS YOUR TIME" — the last approved-but-unbuilt item (audit confirmed zero SCRUBBED/window/clock code existed).
+
+Work Log:
+- New src/lib/mission-clock.ts: single clock source (SIM_RATE=3 journey-min per real second, SCRUB_GRACE=10, FINAL_CALL=10), missionWindows/missionPhase/missionBoardStatus/fmtJourneyClock — zero Date.now() in the app
+- plan-schema: Plan.windowAnchorMin (zod optional) + missionStarts() anchor-aware schedule (compresses missions into total−buffer−anchor; returns starts AND ends — also fixed the timeline's "ends T+" which used raw duration instead of scaled)
+- page.tsx: clockMin interval gated on (step ready && plan && demoMode); phases derived per render; live mission rows M-01… prepended to the solari with status/tone per phase (ON TIME → BOARDING → FINAL CALL → SCRUBBED / DONE ✦) — the existing split-flap cells animate every flip for free; demo clock chip (role=timer); WINDOW CLOSED toast once per mission per plan (scrubbedSeenRef, reset on generate/replan/reset); REPLAN button (N SCRUBBED) next to NEW
+- REPLAN: keeps done+in-window missions (index-remaps done[] AND missionIds[] to keep stamp PATCHes correct), appends fresh missions from the same-mode generic pool (rawUsed ≤ remainingPlay×1.5, total ≤ 6 zod cap, scrubbed titles allowed back for a second window), sets windowAnchorMin=clockMin
+- mission-timeline + boarding-pass-card + bus-ticket-card: optional scrubbed prop → red WINDOW CLOSED · SCRUBBED chip, dimmed row, stamp/punch disabled (aria-disabled)
+- TWO self-caught bugs during E2E: (1) v1 replan recomputed windows from T+00 → fresh missions born pre-scrubbed at clock T+02:54 → fixed via windowAnchorMin (honest replan-from-now semantics); (2) replan pool filtered against the whole plan's titles → demo plans (which come FROM the pool) always had an empty pool → now filters kept titles only
+- TOOLING QUIRK discovered: literal "[m" sequences in COMMAND OUTPUT get swallowed in the tool-result pipeline (ANSI reset interpretation) — page.tsx was NEVER corrupted ("const [mode" displayed as "const ode"); confirmed via python byte check + tsc (src/ has zero errors; the 4 project tsc errors are pre-existing in examples/ + skills/)
+- Verified E2E air (DXB demo): clock chip ticks T+00:00→03:45, board rows flip with flap animation, WINDOW CLOSED toast renders, pass chips + disabled stamps, REPLAN · 4 SCRUBBED → fresh missions anchored at clock (never pre-scrubbed), stamps still earn badges; road (KBS→MJS): conductor ticket shows WINDOW CLOSED chips, punches disabled — shots 104-107 (light+night)
+- lint clean, tsc src/ zero, dev.log clean, browser console clean; docs/features/13 written, docs/README row 13 added
+
+Stage Summary:
+- USP-A live: "Our board defends your time" — the hero solari is now the product's antagonist/enforcer: ignore a mission and the board scrubs it in front of the judges, press REPLAN and the board re-files your ticket from NOW. Fully automatic inside the 2-minute demo (hands-off scrub in ~20-60s).
+- Files: lib/mission-clock.ts (new), lib/plan-schema.ts, page.tsx, mission-timeline.tsx, boarding-pass-card.tsx, bus-ticket-card.tsx, docs/features/13 (new), docs/README.md; shots 104-107

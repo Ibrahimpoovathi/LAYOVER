@@ -18,7 +18,7 @@ import {
 import {
   CATEGORY_META,
   fmtDuration,
-  missionOffsets,
+  missionStarts,
   type Mission,
   type MissionCategory,
   type Plan,
@@ -56,13 +56,16 @@ export function MissionTimeline({
   done,
   onToggle,
   light = true,
+  scrubbed,
 }: {
   plan: Plan;
   done: Record<number, boolean>;
   onToggle: (index: number) => void;
   light?: boolean;
+  /** USP-A — missions the demo clock scrubbed (window missed). Index-keyed. */
+  scrubbed?: Record<number, boolean>;
 }) {
-  const offsets = missionOffsets(plan);
+  const { starts: offsets, ends: windowEnds } = missionStarts(plan);
   const textColor = light ? "text-[#17150f]" : "text-foreground";
   const subText = light ? "text-[#6f6a5c]" : "text-muted-foreground";
 
@@ -72,8 +75,9 @@ export function MissionTimeline({
         const meta = CATEGORY_META[m.category as MissionCategory] ?? CATEGORY_META.chill;
         const Icon = CATEGORY_ICONS[m.category as MissionCategory] ?? Compass;
         const isDone = !!done[i];
+        const isScrubbed = !isDone && !!scrubbed?.[i];
         return (
-          <li key={i} className="relative pl-9">
+          <li key={i} className={`relative pl-9 ${isScrubbed ? "opacity-55" : ""}`}>
             {/* timeline spine */}
             <span
               aria-hidden="true"
@@ -105,8 +109,18 @@ export function MissionTimeline({
                 </span>
                 <span className={`font-mono text-[10px] flex items-center gap-1 ${subText}`}>
                   <Clock className="size-3" aria-hidden="true" />
-                  ends T+{fmtClock(offsets[i] + m.durationMin)}
+                  ends T+{fmtClock(windowEnds[i])}
                 </span>
+                {/* USP-A — the board defended your time: this window closed */}
+                {isScrubbed && (
+                  <span
+                    className="font-mono text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded border text-[#c2452d]"
+                    style={{ borderColor: "#c2452d" }}
+                    title="The clock ran past this window — the board scrubbed it"
+                  >
+                    WINDOW CLOSED · SCRUBBED
+                  </span>
+                )}
                 {/* EVERY BODY BOARDS — access chips (only render when the plan carries them) */}
                 {m.distanceM != null && (
                   <span
@@ -165,13 +179,15 @@ export function MissionTimeline({
                   onClick={() => onToggle(i)}
                   aria-pressed={isDone}
                   aria-label={`${isDone ? "Undo" : "Complete"} mission: ${m.title}`}
+                  disabled={isScrubbed}
+                  aria-disabled={isScrubbed}
                   className={`shrink-0 min-h-11 min-w-11 flex items-center justify-center rounded-md border-2 transition-all active:scale-90 ${
                     isDone
                       ? "border-transparent"
                       : light
                         ? "border-[#17150f]/30 hover:border-[#17150f] bg-transparent"
                         : "border-border hover:border-primary bg-transparent"
-                  }`}
+                  } ${isScrubbed ? "cursor-not-allowed line-through" : ""}`}
                   style={isDone ? { backgroundColor: meta.ring } : undefined}
                 >
                   <Check

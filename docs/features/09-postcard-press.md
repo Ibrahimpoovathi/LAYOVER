@@ -103,3 +103,26 @@ The jam state used to be a full stop. Now it offers:
   In-flight presses then fail their polls into the jam state — just press again.
 * The base64 image lives in the JSON job (~200 KB each); the 15-min TTL keeps
   memory bounded even on a busy demo night.
+
+## v5 — NO WRONG CITY (landmark scene registry) · 2026-10-10
+
+* User-reported blunder class: a Cochin postcard printing under Calicut.
+  Root cause: generic prompts ("airport terminal silhouette") let the image
+  model paint any city — or a borrowed landmark.
+* Fix: `src/lib/landmarks.ts` — `STOP_SCENES` gives every bundled stop
+  (airports + road stops) its own vivid scene descriptor; `buildPrompt`
+  presses THAT scene and adds the guard line "must depict <city> … do not
+  borrow other cities' landmarks". Unknown stops get a city-anchored
+  generic scene that names NO landmark (generic is safe; wrong is not).
+* Gallery key now includes `iata` (two Tokyo airports press separately).
+* Client sends the stop code: air → `plan.airport.iata`, road →
+  `plan.destination.code`; `makePostcard` in `page.tsx`.
+* SVG fallback (showcase tier) stamps every card with
+  "GREETINGS FROM <CITY>" in a vintage ink plate — a fallback card can be
+  generic, never from the wrong city.
+* VLM verification loop caught a real scene bug: CCJ originally described
+  Chinese fishing nets (iconic to KOCHI, 180 km south — the exact blunder
+  class). Fixed to the Kozhikode lighthouse + stone pier + Beypore uru dhow.
+* Verify: press CCJ → the card must show Calicut Beach (pier, banded
+  lighthouse, palms, dhow) — never Kochi nets; dev.log line
+  `[ai/postcard] <id>: press started for CCJ`.

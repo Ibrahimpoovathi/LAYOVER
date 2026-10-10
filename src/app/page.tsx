@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Plane,
   Bus,
@@ -13,6 +13,9 @@ import {
   Loader2,
   ArrowRight,
   Download,
+  Award,
+  Timer,
+  RefreshCw,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -29,16 +32,27 @@ import { VibePicker } from "@/components/terminal/vibe-picker";
 import { AccessPicker } from "@/components/terminal/access-picker";
 import { LedCaptionStrip } from "@/components/terminal/led-caption-strip";
 import { GenerationStatus } from "@/components/terminal/generation-status";
+import { CrewChip, type Crew } from "@/components/terminal/crew-login";
+import { Leaderboard } from "@/components/terminal/leaderboard";
 import { BoardingPassCard } from "@/components/terminal/boarding-pass-card";
 import { BusTicketCard } from "@/components/terminal/bus-ticket-card";
 import { type Airport } from "@/lib/airports";
 import {
   type Plan,
+  type Mission,
   type VibeId,
   type VehicleId,
   type AccessProfileId,
+  CATEGORY_META,
   fmtDuration,
 } from "@/lib/plan-schema";
+import {
+  SIM_RATE,
+  missionWindows,
+  missionPhase,
+  missionBoardStatus,
+  fmtJourneyClock,
+} from "@/lib/mission-clock";
 import { genericDemoPlan, genericRoadPlan, genericWheelsPlan } from "@/lib/demo-mode";
 import { MODE_META, type TransportMode } from "@/lib/modes";
 
@@ -74,6 +88,7 @@ interface WallTrip {
   destination?: string | null;
   routeCode?: string | null;
   accessProfile?: string | null;
+  nickname?: string | null;
   missionsTotal: number;
   missionsDone: number;
   source: string;
@@ -98,6 +113,14 @@ export default function Home() {
   const [nickname, setNickname] = useState("gate-crasher");
   const [missionIds, setMissionIds] = useState<(string | undefined)[]>([]);
   const [wall, setWall] = useState<WallTrip[]>([]);
+
+  // ── CREW GATE — logged-in identity; badges bank to this account ──
+  const [crew, setCrew] = useState<Crew | null>(null);
+  // bumped whenever a badge (stamp) is earned — refreshes the leaderboards
+  const [boardTick, setBoardTick] = useState(0);
+  // USP-A demo clock — journey minutes elapsed since the plan was issued
+  const [clockMin, setClockMin] = useState(0);
+  const scrubbedSeenRef = useRef<Set<number>>(new Set());
 
   const [announcing, setAnnouncing] = useState(false);
   const [annCaption, setAnnCaption] = useState<string | null>(null);
@@ -162,7 +185,37 @@ export default function Home() {
       localStorage.setItem("layover-nickname", n);
     }
     setNickname(n);
+    // restore a crew session if this browser has one
+    try {
+      const raw = localStorage.getItem("layover-crew");
+      if (raw) {
+        const c = JSON.parse(raw) as Crew;
+        if (c?.id && c?.nickname) setCrew(c);
+      }
+    } catch {
+      /* no session — the gate is right there in the header */
+    }
   }, []);
+
+  function handleCrewLogin(c: Crew) {
+    setCrew(c);
+    try {
+      localStorage.setItem("layover-crew", JSON.stringify(c));
+    } catch {
+      /* private mode — session lives for this tab only */
+    }
+    setBoardTick((t) => t + 1);
+  }
+
+  function handleCrewLogout() {
+    setCrew(null);
+    try {
+      localStorage.removeItem("layover-crew");
+    } catch {
+      /* nothing to clear */
+    }
+    toast({ title: "OFF DUTY", description: "Badges keep their rank — new stamps won't bank until you log back in." });
+  }
 
   const loadWall = useCallback(async () => {
     try {
@@ -177,6 +230,57 @@ export default function Home() {
   useEffect(() => {
     loadWall();
   }, [loadWall]);
+
+  // ── USP-A "THE BOARD DEFENDS YOUR TIME" ──
+  // One demo clock for the whole app: 1 real second = SIM_RATE journey
+  // minutes. No scattered Date.now() — every window derives from clockMin.
+  const clockRunning = step === "ready" && !!plan && demoMode;
+  useEffect(() => {
+    if (!clockRunning || !plan) return;
+    const id = setInterval(() => {
+      setClockMin((c) => Math.min(c + SIM_RATE, plan.totalDurationMin));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [clockRunning, plan]);
+
+  const wins = useMemo(() => (plan ? missionWindows(plan) : []), [plan]);
+  const phases = plan
+    ? plan.missions.map((_, i) => missionPhase(wins[i], clockMin, !!done[i]))
+    : [];
+  const scrubbedMap: Record<number, boolean> = {};
+  phases.forEach((p, i) => {
+    if (p === "scrubbed") scrubbedMap[i] = true;
+  });
+  const scrubCount = Object.keys(scrubbedMap).length;
+
+  // the board calls out every window it scrubs — once per mission per plan
+  useEffect(() => {
+    if (!plan) return;
+    plan.missions.forEach((m, i) => {
+      if (
+        missionPhase(wins[i], clockMin, !!done[i]) === "scrubbed" &&
+        !scrubbedSeenRef.current.has(i)
+      ) {
+        scrubbedSeenRef.current.add(i);
+        toast({
+          title: "WINDOW CLOSED",
+          description: `The board scrubbed “${m.title}” — REPLAN files fresh adventures into the time you have left.`,
+        });
+      }
+    });
+  }, [clockMin, plan, done, wins, toast]);
+
+  // live mission rows on the solari while a demo plan is on the clock:
+  // ON TIME → BOARDING → FINAL CALL → SCRUBBED / DONE ✦, with flap animation
+  const missionRows: BoardRow[] =
+    plan && demoMode && step === "ready"
+      ? plan.missions.map((m, i) => ({
+          code: `M-${String(i + 1).padStart(2, "0")}`,
+          dest: m.title.toUpperCase(),
+          info: m.location.toUpperCase(),
+          ...missionBoardStatus(phases[i]),
+        }))
+      : [];
 
   async function generate() {
     if (mode === "air" && !airport) {
@@ -209,6 +313,8 @@ export default function Home() {
     setPostcardUrl(null);
     setPostcardFallback(false);
     setDone({});
+    setClockMin(0);
+    scrubbedSeenRef.current = new Set();
 
     try {
       const body =
@@ -299,13 +405,14 @@ export default function Home() {
       const res = await fetch("/api/trips", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname, plan: p, source: src }),
+        body: JSON.stringify({ nickname, travelerId: crew?.id, plan: p, source: src }),
       });
       const data = await res.json();
       if (data.ok && data.trip?.missions) {
         setMissionIds(data.trip.missions.map((m: { id: string }) => m.id));
       }
       loadWall();
+      setBoardTick((t) => t + 1);
     } catch {
       /* archiving is best-effort */
     }
@@ -320,8 +427,88 @@ export default function Home() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ done: next[i] }),
-      }).catch(() => {});
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.ok && d.stamp && next[i]) {
+            // badge banked — light up the boards
+            setBoardTick((t) => t + 1);
+            const label = CATEGORY_META[d.stamp.category as keyof typeof CATEGORY_META]?.label ?? d.stamp.category;
+            toast({
+              title: `BADGE EARNED · ${String(label).toUpperCase()}`,
+              description: "Slammed into the passport — the leaderboard just moved.",
+            });
+          }
+        })
+        .catch(() => {});
     }
+  }
+
+  // USP-A REPLAN — the board found you a new window: keep everything you
+  // stamped (and everything still inside its window), drop the scrubbed,
+  // file fresh missions that fit the play time left. Deterministic pool,
+  // no network — the replan is as offline-proof as the rest of the demo.
+  function replan() {
+    if (!plan) return;
+    const winsNow = missionWindows(plan);
+    const scrubbedIdx = new Set(
+      plan.missions
+        .map((_, i) => i)
+        .filter((i) => missionPhase(winsNow[i], clockMin, !!done[i]) === "scrubbed"),
+    );
+    const kept: Mission[] = [];
+    const keptDone: Record<number, boolean> = {};
+    const keptIds: (string | undefined)[] = [];
+    plan.missions.forEach((m, i) => {
+      if (!scrubbedIdx.has(i)) {
+        keptDone[kept.length] = !!done[i];
+        keptIds.push(missionIds[i]);
+        kept.push(m);
+      }
+    });
+
+    const available = Math.max(plan.totalDurationMin - plan.bufferMin, 30);
+    // the replan schedule starts from NOW. missionStarts compresses windows
+    // into the remaining play time (same scaling the original plan uses), so
+    // a fresh mission fits while the RAW schedule stays within 1.5× of the
+    // minutes the clock still owes you.
+    const remainingPlay = Math.max(available - clockMin, 15);
+    const capacity = Math.round(remainingPlay * 1.5);
+    let rawUsed = kept.reduce((s, m) => s + m.durationMin, 0);
+    const pool = (planMode === "road"
+      ? genericRoadPlan(plan.airport.iata, plan.airport.city, plan.airport.country ?? "", plan.vibe)
+      : genericDemoPlan(plan.airport.iata, plan.airport.city, plan.airport.country ?? "", plan.vibe)
+    ).missions.filter(
+      // only missions still on the ticket are excluded — a scrubbed adventure
+      // may earn a second window (the board gives second chances)
+      (pm) => !kept.some((cm) => cm.title === pm.title),
+    );
+
+    const fresh: Mission[] = [];
+    for (const pm of pool) {
+      if (kept.length + fresh.length >= 6) break; // plan schema caps at 6 missions
+      if (rawUsed + pm.durationMin <= capacity) {
+        fresh.push(pm);
+        rawUsed += pm.durationMin;
+      }
+    }
+
+    setPlan({
+      ...plan,
+      missions: [...kept, ...fresh],
+      // the revised schedule is honest about the time already gone: every
+      // window (kept + fresh) re-baselines from the clock's current minute
+      windowAnchorMin: clockMin,
+    });
+    setDone(keptDone);
+    setMissionIds([...keptIds, ...fresh.map(() => undefined)]);
+    scrubbedSeenRef.current = new Set();
+    toast({
+      title: "REPLAN FILED",
+      description: fresh.length
+        ? `${fresh.length} fresh mission${fresh.length > 1 ? "s" : ""} filed into the window you have left. The board is watching.`
+        : "Nothing fits the time that's left — hold the line with the missions you kept.",
+    });
   }
 
   async function playAnnouncement() {
@@ -362,9 +549,12 @@ export default function Home() {
     setPostcardFallback(false);
     try {
       // Postcards are sent from where you're headed: in WHEELS the stop is the
-      // origin, so illustrate the destination town instead.
+      // origin, so illustrate the destination town instead. The stop code is
+      // what anchors the scene — the press never borrows another city.
       const postcardCity =
         planMode === "road" ? (plan.destination?.city ?? plan.airport.city) : plan.airport.city;
+      const postcardIata =
+        planMode === "road" ? (plan.destination?.code ?? "") : plan.airport.iata;
       const res = await fetch("/api/ai/postcard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -372,6 +562,7 @@ export default function Home() {
           city: postcardCity,
           country: plan.airport.country ?? "",
           vibe: plan.vibe,
+          iata: postcardIata,
           mode: planMode,
           vehicle: plan.vehicle,
         }),
@@ -427,6 +618,8 @@ export default function Home() {
     setPostcardUrl(null);
     setPostcardFallback(false);
     setAnnCaption(null);
+    setClockMin(0);
+    scrubbedSeenRef.current = new Set();
   }
 
   const VehicleIcon = vehicle === "train" ? TrainFront : Bus;
@@ -442,8 +635,8 @@ export default function Home() {
     >
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <a href="#top" className="flex items-center gap-2.5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6">
+          <a href="#top" className="flex shrink-0 items-center gap-2.5">
             <span className="glow-amber flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               {mode === "road" ? (
                 <Bus className="size-5" aria-hidden="true" />
@@ -455,14 +648,14 @@ export default function Home() {
               <span className="block font-mono text-sm font-bold tracking-[0.3em] text-primary board-glow">
                 LAYOVER
               </span>
-              <span className="block font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
+              <span className="hidden sm:block font-mono text-[9px] tracking-[0.2em] text-muted-foreground">
                 {mode === "road" ? "DEAD MILES → ADVENTURES" : "DEAD HOURS → ADVENTURES"}
               </span>
             </span>
           </a>
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2.5">
             <WifiOff
-              className={`size-4 ${demoMode ? "text-primary" : "text-muted-foreground/40"}`}
+              className={`hidden size-4 sm:block ${demoMode ? "text-primary" : "text-muted-foreground/40"}`}
               aria-hidden="true"
             />
             <label className="hidden sm:flex cursor-pointer items-center gap-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground">
@@ -470,10 +663,11 @@ export default function Home() {
               <Switch checked={demoMode} onCheckedChange={setDemoMode} aria-label="Toggle demo mode" />
             </label>
             <ThemeToggle />
+            <CrewChip crew={crew} onLogin={handleCrewLogin} onLogout={handleCrewLogout} refreshKey={boardTick} />
             <Button
               size="sm"
               onClick={() => document.getElementById("plan")?.scrollIntoView({ behavior: "smooth" })}
-              className="font-mono text-xs tracking-widest"
+              className="px-3 font-mono text-xs tracking-widest sm:px-4"
             >
               PLAN MINE
             </Button>
@@ -520,7 +714,10 @@ export default function Home() {
 
           <div className="mt-10">
             {mode === "air" ? (
-              <DepartureBoard rows={BOARD_ROWS} firstColLabel={meta.firstColLabel} />
+              <DepartureBoard
+                rows={missionRows.length > 0 ? [...missionRows, ...BOARD_ROWS] : BOARD_ROWS}
+                firstColLabel={meta.firstColLabel}
+              />
             ) : (
               <LedAdvisory />
             )}
@@ -581,6 +778,27 @@ export default function Home() {
               />
             ) : step === "ready" && plan ? (
               <div className="space-y-6">
+                {/* USP-A — the demo clock: the board defends your time */}
+                {demoMode && (
+                  <div
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2"
+                    role="timer"
+                    aria-label={`Demo clock: journey minute ${fmtJourneyClock(clockMin)} of ${fmtJourneyClock(plan.totalDurationMin)}`}
+                  >
+                    <Timer className="size-4 text-primary" aria-hidden="true" />
+                    <span className="board-glow font-mono text-[11px] font-bold tracking-widest text-primary">
+                      T+{fmtJourneyClock(clockMin)}
+                    </span>
+                    <span className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground">
+                      / {fmtJourneyClock(plan.totalDurationMin)} LAYOVER · SIM 1S = {SIM_RATE}M · WINDOWS ENFORCED
+                    </span>
+                    {clockMin >= plan.totalDurationMin && (
+                      <span className="font-mono text-[10px] font-bold tracking-widest text-primary">
+                        LAYOVER OVER — DEAD HOURS DEFENDED
+                      </span>
+                    )}
+                  </div>
+                )}
                 {/* quick summary + actions */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p
@@ -629,11 +847,22 @@ export default function Home() {
                       <RotateCcw className="size-4" />
                       NEW
                     </Button>
+                    {scrubCount > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={replan}
+                        className="border-[#c2452d]/50 font-mono text-xs tracking-widest text-[#c2452d] hover:bg-[#c2452d]/10 hover:text-[#c2452d]"
+                      >
+                        <RefreshCw className="size-4" />
+                        REPLAN · {scrubCount} SCRUBBED
+                      </Button>
+                    )}
                   </div>
                 </div>
 
                 {planMode === "road" ? (
-                  <BusTicketCard plan={plan} done={done} onToggleMission={toggleMission} source={source} />
+                  <BusTicketCard plan={plan} done={done} onToggleMission={toggleMission} source={source} scrubbed={scrubbedMap} />
                 ) : (
                   <BoardingPassCard
                     plan={plan}
@@ -643,6 +872,7 @@ export default function Home() {
                     passTitle={passMeta.passTitle}
                     passSubtitle={passMeta.passSubtitle}
                     routeFrom={passMeta.routeFrom}
+                    scrubbed={scrubbedMap}
                   />
                 )}
 
@@ -841,7 +1071,7 @@ export default function Home() {
         </section>
 
         {/* ── WALL OF ADVENTURES ── */}
-        <section className="mx-auto mt-16 max-w-6xl px-4 pb-20 sm:px-6">
+        <section className="mx-auto mt-16 max-w-6xl px-4 sm:px-6">
           <div className="mb-5 flex items-end justify-between">
             <div>
               <h2 className="font-mono text-xs tracking-[0.35em] text-primary board-glow">
@@ -900,6 +1130,11 @@ export default function Home() {
                   <p className="mt-1.5 text-sm font-semibold leading-snug">{t.adventureTitle}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {t.mode === "road" && t.destination ? `${t.city} → ${t.destination}` : t.city}
+                    {t.nickname ? (
+                      <span className="ml-1.5 font-mono text-[9px] tracking-widest text-muted-foreground/80">
+                        · CREW {t.nickname.toUpperCase()}
+                      </span>
+                    ) : null}
                   </p>
                   <div className="mt-3 flex items-center justify-between font-mono text-[10px] tracking-widest text-muted-foreground">
                     <span>
@@ -918,6 +1153,25 @@ export default function Home() {
               ))}
             </ul>
           )}
+        </section>
+
+        {/* ── CREW LEADERBOARD — crew ranked per stop and overall ── */}
+        <section className="mx-auto mt-14 max-w-6xl px-4 pb-20 sm:px-6" aria-label="Crew leaderboard">
+          <div className="mb-5 flex items-end justify-between">
+            <div>
+              <h2 className="board-glow font-mono text-xs tracking-[0.35em] text-primary">
+                CREW LEADERBOARD
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Crew ranked by badges — overall, and at every gate they've played.
+              </p>
+            </div>
+            <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-widest text-muted-foreground">
+              <Award className="size-3.5" aria-hidden="true" />
+              1 BADGE = 1 STAMPED MISSION
+            </span>
+          </div>
+          <Leaderboard refreshKey={boardTick} crewNickname={crew?.nickname ?? null} />
         </section>
       </main>
 

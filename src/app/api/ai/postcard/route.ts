@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import ZAI from "z-ai-web-dev-sdk";
 import { canSpend, spend, recordCacheHit, recordShowcase, showcaseLock } from "@/lib/cost-guard";
 import { svgPostcard } from "@/lib/postcard-svg";
+import { sceneForStop } from "@/lib/landmarks";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -57,8 +58,8 @@ const PRESS_DEADLINE_MS = 110_000; // total budget incl. one retry
 const GALLERY_TTL_MS = 24 * 60 * 60 * 1000;
 const gallery = new Map<string, { imageDataUrl: string; at: number }>();
 
-function galleryKey(city: string, mode: "air" | "road", vehicle: "bus" | "train", vibe: string) {
-  return `${mode}:${vehicle}:${vibe}:${city.toLowerCase()}`;
+function galleryKey(city: string, iata: string, mode: "air" | "road", vehicle: "bus" | "train", vibe: string) {
+  return `${mode}:${vehicle}:${vibe}:${iata || "x"}:${city.toLowerCase()}`;
 }
 
 function pruneGallery() {
@@ -90,17 +91,16 @@ function buildPrompt(
   mode: "air" | "road",
   vehicle: "bus" | "train",
   vibe: string,
+  iata: string,
 ): string {
-  const scene =
-    mode === "road"
-      ? vehicle === "train"
-        ? "a classic Indian passenger train crossing a low bridge over palm-lined backwaters, chai steam rising from a window, warm amber and cream dusk sky"
-        : "a red-and-cream inter-state bus winding up a green ghat road with hairpin bends, past palm trees and a small roadside tea stall, warm amber and cream sky"
-      : "airport terminal silhouette with a departing airplane in a warm amber and cream sky";
+  // NO WRONG CITY: known stops press their own landmark scene; unknown ones
+  // get a city-anchored generic scene that names no landmark at all.
+  const scene = sceneForStop({ iata, city, country, mode, vehicle });
   const flavor = VIBE_FLAVOR[vibe] ?? "";
   return [
     `Vintage travel postcard illustration of ${city}${country ? ", " + country : ""}`,
     scene,
+    `the scene must depict ${city} and its actual character — do not depict any other city and do not borrow other cities' landmarks`,
     flavor,
     "retro screen-print style, bold flat shapes, travel poster aesthetic",
     "no text, no letters, no watermark, high quality",
@@ -170,14 +170,14 @@ export async function POST(req: NextRequest) {
   const mode: "air" | "road" = body.mode === "road" ? "road" : "air";
   const vehicle: "bus" | "train" = body.vehicle === "train" ? "train" : "bus";
 
-  const prompt = buildPrompt(city, country, mode, vehicle, vibe);
+  const prompt = buildPrompt(city, country, mode, vehicle, vibe, iata);
 
   pruneJobs();
   pruneGallery();
   const job: PostcardJob = { id: randomUUID(), status: "inking", createdAt: Date.now() };
 
   // ── TIER 2 · CACHED: same scene pressed within 24h → instant free replay
-  const gKey = galleryKey(city, mode, vehicle, vibe);
+  const gKey = galleryKey(city, iata, mode, vehicle, vibe);
   const gHit = gallery.get(gKey);
   if (gHit) {
     job.status = "done";
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
   // ── TIER 1 · SHOWCASE: budget spent / showcase lock → the local press
   if (showcaseLock() || !canSpend("postcard")) {
     job.status = "done";
-    job.imageDataUrl = svgPostcard(city, country, mode, vehicle, vibe);
+    job.imageDataUrl = svgPostcard(city, country, mode, vehicle, vibe, iata);
     job.prompt = prompt;
     job.source = "showcase";
     recordShowcase();

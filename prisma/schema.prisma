@@ -17,6 +17,7 @@ datasource db {
 model Traveler {
   id        String   @id @default(cuid())
   nickname  String   @unique
+  pinHash   String? // crew login: sha256 of the 4-digit crew PIN (null = unclaimed)
   trips     Trip[]
   createdAt DateTime @default(now())
 }

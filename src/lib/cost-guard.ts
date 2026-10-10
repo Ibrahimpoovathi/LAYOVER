@@ -20,7 +20,7 @@
  * All state is in-memory (per server instance) — no middleware, no cost.
  */
 
-export type CostKind = "plan" | "postcard" | "announce";
+export type CostKind = "plan" | "postcard" | "announce" | "transcribe";
 export type CostTier = "showcase" | "cache" | "live";
 
 /** Hard ceiling on LIVE AI calls per rolling hour. Env-tunable. */
@@ -43,7 +43,7 @@ function state(): CostState {
   if (!store.__layoverCost) {
     store.__layoverCost = {
       windowStart: Date.now(),
-      live: { plan: 0, postcard: 0, announce: 0 },
+      live: { plan: 0, postcard: 0, announce: 0, transcribe: 0 },
       totalLive: 0,
       cacheHits: 0,
       showcaseServes: 0,
@@ -55,7 +55,7 @@ function state(): CostState {
 function roll(s: CostState) {
   if (Date.now() - s.windowStart >= 3_600_000) {
     s.windowStart = Date.now();
-    s.live = { plan: 0, postcard: 0, announce: 0 };
+    s.live = { plan: 0, postcard: 0, announce: 0, transcribe: 0 };
   }
 }
 
@@ -107,7 +107,7 @@ export interface CostSnapshot {
 export function costSnapshot(): CostSnapshot {
   const s = state();
   roll(s);
-  const liveThisHour = s.live.plan + s.live.postcard + s.live.announce;
+  const liveThisHour = s.live.plan + s.live.postcard + s.live.announce + s.live.transcribe;
   const pct = HOURLY_BUDGET > 0 ? liveThisHour / HOURLY_BUDGET : 1;
   return {
     budget: HOURLY_BUDGET,

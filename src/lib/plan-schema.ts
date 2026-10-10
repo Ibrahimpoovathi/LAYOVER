@@ -136,6 +136,9 @@ export const planSchema = z.object({
   missions: z.array(missionSchema).min(2).max(6),
   // ── EVERY BODY BOARDS — the SSR code this plan was designed around ──
   accessProfile: z.enum(ACCESS_PROFILE_IDS as [AccessProfileId, ...AccessProfileId[]]).optional(),
+  // ── USP-A "THE BOARD DEFENDS YOUR TIME" — replanned schedules start from
+  // the clock's current journey minute (0 = issued at T+00:00) ──
+  windowAnchorMin: z.number().int().min(0).max(720).optional(),
 });
 
 export type Plan = z.infer<typeof planSchema>;
@@ -219,4 +222,27 @@ export function missionOffsets(plan: Plan): number[] {
     acc += Math.round(m.durationMin * scale);
     return start;
   });
+}
+
+/**
+ * USP-A — anchor-aware mission schedule: starts AND ends in journey minutes.
+ * A replanned plan carries windowAnchorMin (the clock minute the revised
+ * schedule starts from), so fresh windows are honest about the time that's
+ * already gone. The remaining play window (total − buffer − anchor) is what
+ * missions get compressed into.
+ */
+export function missionStarts(plan: Plan): { starts: number[]; ends: number[] } {
+  const anchor = plan.windowAnchorMin ?? 0;
+  const available = Math.max(plan.totalDurationMin - plan.bufferMin - anchor, 30);
+  const totalMission = plan.missions.reduce((s, m) => s + m.durationMin, 0);
+  const scale = totalMission > available ? available / totalMission : 1;
+  let acc = 0;
+  const starts: number[] = [];
+  const ends: number[] = [];
+  for (const m of plan.missions) {
+    starts.push(anchor + acc);
+    acc += Math.round(m.durationMin * scale);
+    ends.push(anchor + acc);
+  }
+  return { starts, ends };
 }

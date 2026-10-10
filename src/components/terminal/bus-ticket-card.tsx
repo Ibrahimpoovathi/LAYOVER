@@ -6,7 +6,7 @@ import {
   ACCESS_PROFILE_META,
   CATEGORY_META,
   fmtDuration,
-  missionOffsets,
+  missionStarts,
   VEHICLE_META,
   type MissionCategory,
   type Plan,
@@ -32,11 +32,14 @@ export function BusTicketCard({
   done,
   onToggleMission,
   source = "ai",
+  scrubbed,
 }: {
   plan: Plan;
   done: Record<number, boolean>;
   onToggleMission: (index: number) => void;
   source?: string;
+  /** USP-A — stages the demo clock scrubbed (window missed). Index-keyed. */
+  scrubbed?: Record<number, boolean>;
 }) {
   const vehicle: VehicleId = plan.vehicle ?? "bus";
   const origin = plan.airport.city;
@@ -58,7 +61,7 @@ export function BusTicketCard({
     };
   }, [plan]);
 
-  const offsets = missionOffsets(plan);
+  const { starts: offsets } = missionStarts(plan);
   const allDone = plan.missions.length > 0 && plan.missions.every((_, i) => done[i]);
 
   // EVERY BODY BOARDS — the IATA SSR code this ticket was designed around
@@ -253,10 +256,11 @@ export function BusTicketCard({
               {plan.missions.map((m, i) => {
                 const meta = CATEGORY_META[m.category as MissionCategory] ?? CATEGORY_META.chill;
                 const isDone = !!done[i];
+                const isScrubbed = !isDone && !!scrubbed?.[i];
                 return (
                   <li
                     key={i}
-                    className="flex items-start gap-3 border-b border-dashed border-[#17150f]/15 py-2.5 last:border-0"
+                    className={`flex items-start gap-3 border-b border-dashed border-[#17150f]/15 py-2.5 last:border-0 ${isScrubbed ? "opacity-55" : ""}`}
                   >
                     {/* conductor punch — a hole torn through the paper when done */}
                     <button
@@ -264,11 +268,13 @@ export function BusTicketCard({
                       onClick={() => onToggleMission(i)}
                       aria-pressed={isDone}
                       aria-label={`${isDone ? "Undo punch" : "Punch"} stage ${i + 1}: ${m.title}`}
+                      disabled={isScrubbed}
+                      aria-disabled={isScrubbed}
                       className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-90 min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 ${
                         isDone
                           ? "border-[#B3331F] bg-background"
                           : "border-[#17150f]/35 bg-transparent hover:border-[#B3331F]"
-                      }`}
+                      } ${isScrubbed ? "cursor-not-allowed" : ""}`}
                     >
                       {isDone ? (
                         <span className="punch-pop" aria-hidden="true">
@@ -296,6 +302,15 @@ export function BusTicketCard({
                         <span className="font-mono text-[9px] text-[#6f6a5c]">
                           T+{fmtClock(offsets[i])}
                         </span>
+                        {/* USP-A — the board defended your time: this window closed */}
+                        {isScrubbed && (
+                          <span
+                            className="rounded border border-[#B3331F] px-1 py-0.5 font-mono text-[9px] font-bold tracking-widest text-[#B3331F]"
+                            title="The clock ran past this window — the board scrubbed it"
+                          >
+                            WINDOW CLOSED · SCRUBBED
+                          </span>
+                        )}
                         {/* EVERY BODY BOARDS — access chips (only when the plan carries them) */}
                         {m.distanceM != null && (
                           <span className="rounded border border-[#B3331F]/40 px-1 py-0.5 font-mono text-[9px] font-bold tracking-widest text-[#B3331F]/90">

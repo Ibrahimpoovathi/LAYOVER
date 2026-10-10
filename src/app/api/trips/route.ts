@@ -6,7 +6,9 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/trips — archive a completed adventure (traveler + trip + missions).
- * Body: { nickname?, plan }
+ * Body: { nickname?, travelerId?, plan }
+ *   travelerId = logged-in crew (CREW GATE) — badges accrue to that account.
+ *   No travelerId → falls back to upsert-by-nickname (anonymous wanderer).
  * GET  /api/trips?limit=12 — the "wall of adventures" (recent trips + counts)
  */
 export async function POST(req: NextRequest) {
@@ -22,11 +24,20 @@ export async function POST(req: NextRequest) {
     const plan = parsed.data;
     const nickname = (body.nickname ?? "anonymous-traveler").toString().slice(0, 40);
 
-    const traveler = await db.traveler.upsert({
-      where: { nickname },
-      update: {},
-      create: { nickname },
-    });
+    // CREW GATE: a logged-in crew id wins; otherwise resolve by nickname.
+    let travelerId: string | null = null;
+    const rawCrewId = (body.travelerId ?? "").toString();
+    if (rawCrewId) {
+      const crew = await db.traveler.findUnique({ where: { id: rawCrewId }, select: { id: true } });
+      if (crew) travelerId = crew.id;
+    }
+    const traveler = travelerId
+      ? { id: travelerId }
+      : await db.traveler.upsert({
+          where: { nickname },
+          update: {},
+          create: { nickname },
+        });
 
     const trip = await db.trip.create({
       data: {
@@ -76,7 +87,11 @@ export async function GET(req: NextRequest) {
     const trips = await db.trip.findMany({
       orderBy: { createdAt: "desc" },
       take: limit,
-      include: { missions: { select: { done: true } }, stamps: true },
+      include: {
+        missions: { select: { done: true } },
+        stamps: true,
+        traveler: { select: { nickname: true } },
+      },
     });
     return NextResponse.json({
       ok: true,
@@ -93,6 +108,7 @@ export async function GET(req: NextRequest) {
         accessProfile: t.accessProfile,
         source: t.source,
         createdAt: t.createdAt,
+        nickname: t.traveler?.nickname ?? null,
         missionsTotal: t.missions.length,
         missionsDone: t.missions.filter((m) => m.done).length,
         stampCount: t.stamps.length,

@@ -89,6 +89,8 @@ real payloads, or click-path). Someone must be able to paste-run this.
 | 09 | [`09-postcard-press.md`](./features/09-postcard-press.md) | async postcard press (job queue + polling), proxy-timeout root cause, SAVE POSTCARD |
 | 10 | [`10-theme-toggle.md`](./features/10-theme-toggle.md) | DAY ⇄ NIGHT toggle — 4 palettes (air/road × night/day), `html.light` token engine, machines-stay-dark doctrine, hydration-safe toggle |
 | 11 | [`11-access-profiles.md`](./features/11-access-profiles.md) | EVERY BODY BOARDS — IATA SSR access profiles (WCHR/DPNA/DEAF): planned-for-body missions, ticket SSR print, LED caption feed, low-stim motion mute |
+| 12 | [`12-crew-leaderboard.md`](./features/12-crew-leaderboard.md) | CREW GATE login (callsign + hashed 4-digit PIN), badges = stamped missions, STOP leaderboards (people ranked per airport/rail/bus stop) + OVERALL, `YOU` highlight, live board refresh |
+| 13 | [`13-uspa-self-clearing-board.md`](./features/13-uspa-self-clearing-board.md) | USP-A "THE BOARD DEFENDS YOUR TIME" — demo clock (1s=3 journey min), mission windows, solari flips SCRUBBED with flap animation, WINDOW CLOSED chips, REPLAN re-anchors fresh missions at the clock |
 
 ## Cross-cutting playbooks
 
