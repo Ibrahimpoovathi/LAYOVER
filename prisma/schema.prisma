@@ -19,6 +19,7 @@ model Traveler {
   nickname  String   @unique
   pinHash   String? // crew login: sha256 of the 4-digit crew PIN (null = unclaimed)
   trips     Trip[]
+  reviews   Review[]
   createdAt DateTime @default(now())
 }
 
@@ -79,4 +80,29 @@ model Stamp {
   earnedAt  DateTime @default(now())
 
   @@index([tripId])
+}
+
+// ─────────────────────────────────────────────
+// CREW REVIEWS — "is this task worth it?"
+// One review per crew member per task. Tasks are grouped by
+// missionKey (title|location, normalized) so reviews aggregate
+// across every trip that generated the same task — not just one
+// trip's copy of it. Reading is public; writing requires login.
+// ─────────────────────────────────────────────
+
+model Review {
+  id         String   @id @default(cuid())
+  missionKey String // normalized "title|location" — the task identity
+  missionId  String? // back-reference to the mission instance reviewed (null = keyed only)
+  travelerId String
+  traveler   Traveler @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  nickname   String // denormalized for fast rendering
+  rating     Int // 1..5 stars
+  verdict    String? // WORTH_IT | PRICEY | SKIP
+  comment    String? // optional short field note (cost / value / tip)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([travelerId, missionKey]) // one review per crew per task (upsert = update)
+  @@index([missionKey])
 }

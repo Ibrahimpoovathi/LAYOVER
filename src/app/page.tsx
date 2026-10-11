@@ -862,7 +862,7 @@ export default function Home() {
                 </div>
 
                 {planMode === "road" ? (
-                  <BusTicketCard plan={plan} done={done} onToggleMission={toggleMission} source={source} scrubbed={scrubbedMap} />
+                  <BusTicketCard plan={plan} done={done} onToggleMission={toggleMission} source={source} scrubbed={scrubbedMap} crew={crew} missionIds={missionIds} />
                 ) : (
                   <BoardingPassCard
                     plan={plan}
@@ -873,6 +873,8 @@ export default function Home() {
                     passSubtitle={passMeta.passSubtitle}
                     routeFrom={passMeta.routeFrom}
                     scrubbed={scrubbedMap}
+                    crew={crew}
+                    missionIds={missionIds}
                   />
                 )}
 

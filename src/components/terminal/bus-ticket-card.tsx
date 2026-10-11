@@ -12,6 +12,8 @@ import {
   type Plan,
   type VehicleId,
 } from "@/lib/plan-schema";
+import { missionKeyOf } from "@/lib/review-key";
+import { MissionReview, useReviewSummaries } from "./mission-reviews";
 import { StampBadge } from "./stamp-badge";
 
 /** Local T+ clock — same pattern as mission-timeline.tsx (T+HH:MM, zero-padded). */
@@ -33,6 +35,8 @@ export function BusTicketCard({
   onToggleMission,
   source = "ai",
   scrubbed,
+  crew = null,
+  missionIds = [],
 }: {
   plan: Plan;
   done: Record<number, boolean>;
@@ -40,6 +44,10 @@ export function BusTicketCard({
   source?: string;
   /** USP-A — stages the demo clock scrubbed (window missed). Index-keyed. */
   scrubbed?: Record<number, boolean>;
+  /** Logged-in crew (enables stage reviews). null = read-only. */
+  crew?: { id: string; nickname: string } | null;
+  /** Archived DB ids for this plan's missions (index-aligned, sparse ok). */
+  missionIds?: (string | undefined)[];
 }) {
   const vehicle: VehicleId = plan.vehicle ?? "bus";
   const origin = plan.airport.city;
@@ -63,6 +71,13 @@ export function BusTicketCard({
 
   const { starts: offsets } = missionStarts(plan);
   const allDone = plan.missions.length > 0 && plan.missions.every((_, i) => done[i]);
+
+  // CREW REVIEWS — one bulk fetch for every stage's star chip.
+  const keys = useMemo(
+    () => plan.missions.map((m) => missionKeyOf(m.title, m.location)),
+    [plan.missions]
+  );
+  const { summaries, refresh } = useReviewSummaries(keys);
 
   // EVERY BODY BOARDS — the IATA SSR code this ticket was designed around
   const access = ACCESS_PROFILE_META[plan.accessProfile ?? "none"];
@@ -332,6 +347,16 @@ export function BusTicketCard({
                             LOUD
                           </span>
                         )}
+                        {/* CREW REVIEWS — star chip + verdict dialog */}
+                        <MissionReview
+                          title={m.title}
+                          location={m.location}
+                          missionId={missionIds[i]}
+                          summary={summaries[keys[i]]}
+                          light
+                          crew={crew}
+                          onPosted={refresh}
+                        />
                       </div>
                       <p
                         className={`mt-1 font-semibold leading-snug text-[#17150f] ${

@@ -517,3 +517,22 @@ Stage Summary:
 - Site is now product-pure: every hackathon/prize/venue/date reference scrubbed from user-visible copy, metadata and artifacts; nothing hints it was built for an event. Terminal-flavored in-world lines keep the same visual rhythm (lengths matched to avoid reflow).
 - Audit confirmed tasks 15-17 (deaf STT two-engine fix, location-aware postcards, people-ranked stop+overall leaderboards, USP-A) were already delivered in earlier sessions — no code regression found; E2E re-verified them incidentally (clock chip, REPLAN, badge loop all live).
 - Files: page.tsx, lib/modes.ts, app/layout.tsx, components/terminal/stamp-badge.tsx, components/terminal/bus-ticket-card.tsx, api/leaderboard/route.ts (comment); shots 108-111
+---
+Task ID: 19
+Agent: Z.ai Code (main)
+Task: Customer reviews + ratings for each mission/task ("people can understand if something is costly or not worth it. we can rate and review if we login").
+
+Work Log:
+- Designed aggregation around the TASK, not the trip: missionKey = normalize(title)+"|"+normalize(location) (src/lib/review-key.ts, shared client+server) — the same task generated across many travelers/trips maps to ONE review bucket, so averages reflect everyone's experience; also rates replanned/not-yet-archived missions (POST accepts title+location when no DB id)
+- Prisma Review model: missionKey, missionId?, travelerId→Traveler (Cascade), nickname denormalized, rating 1..5, verdict WORTH_IT|PRICEY|SKIP, comment ≤240, @@unique([travelerId, missionKey]) (upsert = update-your-review), @@index([missionKey]); db:push OK
+- API: GET /api/reviews (missionId OR key + optional travelerId → avg/count/distribution/latest-50/mine), POST /api/reviews (LOGIN REQUIRED — verified travelerId, same trust model as /api/trips; 401 message "CREW LOGIN NEEDED — claim a callsign to rate missions"), GET /api/reviews/summary (bulk keys → {avg,count} via single groupBy — one round-trip per plan)
+- UI mission-reviews.tsx: ReviewStarChip on every row (★ 4.5 (7) / ☆ RATE IT, paper + terminal ink variants), verdict Dialog (big avg + stars, 5→1 distribution bars, scrollable review list with YOU marker, rate form: star radiogroup + verdict chips + textarea + POST), useReviewSummaries hook (bulk fetch, refresh() bump after post); fixed lint set-state-in-effect (no sync setState in effect — stale keys are simply never read) + TS null-avg guard
+- Threading: page.tsx → cards → MissionTimeline/BusTicketCard rows (crew + missionIds props); both air manifest and road journey stages carry chips
+- Seed prisma/seed-reviews.ts (idempotent, via REAL API: 8 fictional crew × login → ~207 verdicts across all 46 demo tasks incl. generic pools); FIRST RUN FAILED with stale Prisma client (7th module-state incident: dev server predated db:push → db.review undefined → 500) — clean restart (pkill + rm .next) fixed; lesson already documented in doc 12
+- E2E browser: CCJ pass chips 3.5(6)/4.5(6)/4.0(6)/3.4(5); dialog logged-out shows distribution + seeded reviews + login gate; boarded VERDICT-VOYAGER (9090) → 4★ WORTH IT + note → VERDICT FILED toast, list shows YOU, chip recomputed 3.5(6)→3.6(7) live; road ticket 5/5 stages chipulated; light+night screenshots; zero console/page errors
+- lint + tsc clean (src), dev.log clean; docs/features/14 + docs/README row 14; shots 112-116
+
+Stage Summary:
+- Missions are now peer-reviewed: every task row answers "is this costly / worth it?" with real crew verdicts, ratings update live, and the write path is gated by the same callsign+PIN identity as badges — gamification loop extended with a reputation layer.
+- Key decision: task-identity key (title|location) decouples reviews from trip rows so averages aggregate across all travelers AND works for unarchived replan missions.
+- Files: prisma/schema.prisma, prisma/seed-reviews.ts (new), src/lib/review-key.ts (new), src/app/api/reviews/route.ts (new), src/app/api/reviews/summary/route.ts (new), src/components/terminal/mission-reviews.tsx (new), mission-timeline.tsx, bus-ticket-card.tsx, boarding-pass-card.tsx, page.tsx, docs/features/14 (new), docs/README.md; shots 112-116

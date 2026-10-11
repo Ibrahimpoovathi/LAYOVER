@@ -91,6 +91,7 @@ real payloads, or click-path). Someone must be able to paste-run this.
 | 11 | [`11-access-profiles.md`](./features/11-access-profiles.md) | EVERY BODY BOARDS — IATA SSR access profiles (WCHR/DPNA/DEAF): planned-for-body missions, ticket SSR print, LED caption feed, low-stim motion mute |
 | 12 | [`12-crew-leaderboard.md`](./features/12-crew-leaderboard.md) | CREW GATE login (callsign + hashed 4-digit PIN), badges = stamped missions, STOP leaderboards (people ranked per airport/rail/bus stop) + OVERALL, `YOU` highlight, live board refresh |
 | 13 | [`13-uspa-self-clearing-board.md`](./features/13-uspa-self-clearing-board.md) | USP-A "THE BOARD DEFENDS YOUR TIME" — demo clock (1s=3 journey min), mission windows, solari flips SCRUBBED with flap animation, WINDOW CLOSED chips, REPLAN re-anchors fresh missions at the clock |
+| 14 | [`14-crew-reviews.md`](./features/14-crew-reviews.md) | CREW REVIEWS "is this task worth it?" — star chip on every mission row, verdict dialog (distribution + reviews), login-gated 1–5★ + WORTH IT/PRICEY/SKIP + field note, task-key aggregation across trips, seeded demo verdicts |
 
 ## Cross-cutting playbooks
 

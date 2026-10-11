@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   UtensilsCrossed,
   Compass,
@@ -23,6 +24,8 @@ import {
   type MissionCategory,
   type Plan,
 } from "@/lib/plan-schema";
+import { missionKeyOf } from "@/lib/review-key";
+import { MissionReview, useReviewSummaries } from "./mission-reviews";
 
 const CATEGORY_ICONS: Record<MissionCategory, React.ComponentType<{ className?: string }>> = {
   eat: UtensilsCrossed,
@@ -57,6 +60,8 @@ export function MissionTimeline({
   onToggle,
   light = true,
   scrubbed,
+  crew = null,
+  missionIds = [],
 }: {
   plan: Plan;
   done: Record<number, boolean>;
@@ -64,10 +69,21 @@ export function MissionTimeline({
   light?: boolean;
   /** USP-A — missions the demo clock scrubbed (window missed). Index-keyed. */
   scrubbed?: Record<number, boolean>;
+  /** Logged-in crew (enables rating). null = read-only reviews. */
+  crew?: { id: string; nickname: string } | null;
+  /** Archived DB ids for this plan's missions (index-aligned, sparse ok). */
+  missionIds?: (string | undefined)[];
 }) {
   const { starts: offsets, ends: windowEnds } = missionStarts(plan);
   const textColor = light ? "text-[#17150f]" : "text-foreground";
   const subText = light ? "text-[#6f6a5c]" : "text-muted-foreground";
+
+  // CREW REVIEWS — one bulk fetch for every row's star chip.
+  const keys = useMemo(
+    () => plan.missions.map((m) => missionKeyOf(m.title, m.location)),
+    [plan.missions]
+  );
+  const { summaries, refresh } = useReviewSummaries(keys);
 
   return (
     <ol className="relative space-y-3" aria-label="Layover missions">
@@ -150,6 +166,16 @@ export function MissionTimeline({
                     {m.sensory.toUpperCase()}
                   </span>
                 )}
+                {/* CREW REVIEWS — star chip + verdict dialog */}
+                <MissionReview
+                  title={m.title}
+                  location={m.location}
+                  missionId={missionIds[i]}
+                  summary={summaries[keys[i]]}
+                  light={light}
+                  crew={crew}
+                  onPosted={refresh}
+                />
               </div>
 
               <div className="mt-1 flex items-start justify-between gap-3">
